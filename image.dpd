@@ -1,0 +1,7 @@
+obj/image.o: image.c image.h def.h
+obj/bmp_simple.o: bmp_simple.c image.h def.h
+obj/pnm.o: pnm.c image.h def.h
+obj/main.o: main.c image.h def.h
+obj/jpeg.o: jpeg.c image.h def.h
+obj/bmp.o: bmp.c image.h def.h
+obj/png.o: png.c image.h def.h

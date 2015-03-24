@@ -1,0 +1,8 @@
+/obj
+/html
+*.exe
+*.o
+*.lib
+*.a
+.project
+.cproject
