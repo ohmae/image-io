@@ -172,18 +172,6 @@ result_t write_png_stream(FILE *fp, image_t *img) {
   if (img == NULL) {
     return result;
   }
-  png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  if (png_ptr == NULL) {
-    goto error;
-  }
-  info_ptr = png_create_info_struct(png_ptr);
-  if (info_ptr == NULL) {
-    goto error;
-  }
-  if (setjmp(png_jmpbuf(png_ptr))) {
-    goto error;
-  }
-  png_init_io(png_ptr, fp);
   switch (img->color_type) {
     case COLOR_TYPE_INDEX:  // インデックスカラー
       color_type = PNG_COLOR_TYPE_PALETTE;
@@ -201,7 +189,21 @@ result_t write_png_stream(FILE *fp, image_t *img) {
       color_type = PNG_COLOR_TYPE_RGBA;
       row_size = sizeof(png_byte) * img->width * 4;
       break;
+    default:
+      return FAILURE;
   }
+  png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (png_ptr == NULL) {
+    goto error;
+  }
+  info_ptr = png_create_info_struct(png_ptr);
+  if (info_ptr == NULL) {
+    goto error;
+  }
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    goto error;
+  }
+  png_init_io(png_ptr, fp);
   png_set_IHDR(png_ptr, info_ptr, img->width, img->height, 8,
       color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
       PNG_FILTER_TYPE_DEFAULT);
