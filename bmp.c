@@ -528,10 +528,14 @@ static result_t read_pallette(FILE *fp, bmp_header_t *header, image_t *img) {
   int palette_size = header->file.bfOffBits - FILE_HEADER_SIZE
       - header->info.biSize;
   int palette_num = palette_size / color_size;
+  int palette_max = (1 << header->info.biBitCount);
   if (palette_num < header->info.biClrUsed) {
     // 色数よりパレットが小さいので異常
-    ERR("");
     return FAILURE;
+  }
+  if (palette_num > palette_max) {
+    // ビット数から計算された最大値より大きい場合はその値を最大値とする。
+    palette_num = palette_max;
   }
   if (header->info.biClrUsed != 0 && header->info.biClrUsed < palette_num) {
     // 色数がヘッダに記載されている場合はそちらを優先
@@ -539,7 +543,6 @@ static result_t read_pallette(FILE *fp, bmp_header_t *header, image_t *img) {
   }
   palette_size = palette_num * color_size;
   if (fread(buffer, palette_size, 1, fp) != 1) {
-    ERR("");
     return FAILURE;
   }
   bs_init(buffer, palette_size, &bs);
