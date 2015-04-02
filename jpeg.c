@@ -46,8 +46,9 @@ image_t *read_jpeg_stream(FILE *fp) {
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr jerr;
   image_t *img = NULL;
+  JSAMPROW row;
   JSAMPARRAY rows = NULL;
-  int row_size;
+  int stride;
   cinfo.err = jpeg_std_error(&jerr);
   jpeg_create_decompress(&cinfo);
   jpeg_stdio_src(&cinfo, fp);
@@ -58,9 +59,9 @@ image_t *read_jpeg_stream(FILE *fp) {
   if ((rows = calloc(sizeof(JSAMPROW), cinfo.output_height)) == NULL) {
     goto error;
   }
-  row_size = sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components;
+  stride = sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components;
   for (i = 0; i < cinfo.output_height; ++i) {
-    if ((rows[i] = malloc(row_size)) == NULL) {
+    if ((rows[i] = malloc(stride)) == NULL) {
       goto error;
     }
   }
@@ -74,10 +75,11 @@ image_t *read_jpeg_stream(FILE *fp) {
     goto error;
   }
   for (y = 0; y < cinfo.output_height; y++) {
+    row = rows[y];
     for (x = 0; x < cinfo.output_width; x++) {
-      img->map[y][x].c.r = rows[y][x * 3 + 0];
-      img->map[y][x].c.g = rows[y][x * 3 + 1];
-      img->map[y][x].c.b = rows[y][x * 3 + 2];
+      img->map[y][x].c.r = *row++;
+      img->map[y][x].c.g = *row++;
+      img->map[y][x].c.b = *row++;
       img->map[y][x].c.a = 0xff;
     }
     free(rows[y]);
@@ -130,11 +132,12 @@ result_t write_jpeg_stream(FILE *fp, image_t *img) {
   struct jpeg_compress_struct cinfo;
   struct jpeg_error_mgr jerr;
   image_t *to_free = NULL;
-  JSAMPROW row = NULL;
+  JSAMPROW buffer = NULL;
+  JSAMPROW row;
   if (img == NULL) {
     return FAILURE;
   }
-  if ((row = malloc(sizeof(JSAMPLE) * 3 * img->width)) == NULL) {
+  if ((buffer = malloc(sizeof(JSAMPLE) * 3 * img->width)) == NULL) {
     return FAILURE;
   }
   if (img->color_type != COLOR_TYPE_RGB) {
@@ -153,16 +156,17 @@ result_t write_jpeg_stream(FILE *fp, image_t *img) {
   jpeg_set_quality(&cinfo, 75, TRUE);
   jpeg_start_compress(&cinfo, TRUE);
   for (y = 0; y < img->height; y++) {
+    row = buffer;
     for (x = 0; x < img->width; x++) {
-      row[x * 3 + 0] = img->map[y][x].c.r;
-      row[x * 3 + 1] = img->map[y][x].c.g;
-      row[x * 3 + 2] = img->map[y][x].c.b;
+      *row++ = img->map[y][x].c.r;
+      *row++ = img->map[y][x].c.g;
+      *row++ = img->map[y][x].c.b;
     }
-    jpeg_write_scanlines(&cinfo, &row, 1);
+    jpeg_write_scanlines(&cinfo, &buffer, 1);
   }
   jpeg_finish_compress(&cinfo);
   jpeg_destroy_compress(&cinfo);
-  free(row);
+  free(buffer);
   free_image(to_free);
   return SUCCESS;
 }

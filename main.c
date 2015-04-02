@@ -92,6 +92,10 @@ int main(int argc, char**argv) {
       strcat(outname, name);
       strcat(outname, ".bmp");
       write_bmp_file(outname, img);
+      strcpy(outname, "out/simple-");
+      strcat(outname, name);
+      strcat(outname, ".bmp");
+      write_bmp_simple_file(outname, img);
       b = img;
       img = image_to_index(img);
       if (img != NULL) {
@@ -105,14 +109,6 @@ int main(int argc, char**argv) {
         write_bmp_file(outname, img);
       }
       img = image_to_gray(b);
-      strcpy(outname, "out/d-");
-      strcat(outname, name);
-      strcat(outname, ".png");
-      write_png_file(outname, img);
-      strcpy(outname, "out/");
-      strcat(outname, name);
-      strcat(outname, ".bmp");
-      write_bmp_simple_file(outname, img);
       strcpy(outname, "out/d-");
       strcat(outname, name);
       strcat(outname, ".png");

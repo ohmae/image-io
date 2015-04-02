@@ -86,12 +86,12 @@ image_t *read_bmp_simple_stream(FILE *fp) {
   uint8_t header_buffer[DEFAULT_HEADER_SIZE];
   BITMAPFILEHEADER *file = (BITMAPFILEHEADER*)header_buffer;
   BITMAPINFOHEADER *info = (BITMAPINFOHEADER*)(header_buffer + FILE_HEADER_SIZE);
-  uint8_t *buffer = NULL;
+  uint8_t *row, *buffer;
   image_t *img = NULL;
   int x, y;
   int width;
   int height;
-  int row_size;
+  int stride;
   if (fread(header_buffer, DEFAULT_HEADER_SIZE, 1, fp) != 1) {
     return NULL;
   }
@@ -102,21 +102,22 @@ image_t *read_bmp_simple_stream(FILE *fp) {
   }
   width = info->biWidth;
   height = info->biHeight;
-  row_size = (width * 3 + 3) / 4 * 4;
-  if ((buffer = malloc(row_size)) == NULL) {
+  stride = (width * 3 + 3) / 4 * 4;
+  if ((buffer = malloc(stride)) == NULL) {
     return NULL;
   }
   if ((img = allocate_image(width, height, COLOR_TYPE_RGB)) == NULL) {
     goto error;
   }
   for (y = height - 1; y >= 0; y--) {
-    if (fread(buffer, row_size, 1, fp) != 1) {
+    if (fread(buffer, stride, 1, fp) != 1) {
       goto error;
     }
+    row = buffer;
     for (x = 0; x < width; x++) {
-      img->map[y][x].c.b = buffer[x * 3 + 0];
-      img->map[y][x].c.g = buffer[x * 3 + 1];
-      img->map[y][x].c.r = buffer[x * 3 + 2];
+      img->map[y][x].c.b = *row++;
+      img->map[y][x].c.g = *row++;
+      img->map[y][x].c.r = *row++;
       img->map[y][x].c.a = 0xff;
     }
   }
@@ -168,17 +169,17 @@ result_t write_bmp_simple_stream(FILE *fp, image_t *img) {
   BITMAPFILEHEADER *file = (BITMAPFILEHEADER*)header_buffer;
   BITMAPINFOHEADER *info = (BITMAPINFOHEADER*)(header_buffer + FILE_HEADER_SIZE);
   int x, y;
-  int row_size;
-  uint8_t *buffer = NULL;
+  int stride;
+  uint8_t *row, *buffer;
   if (img->color_type != COLOR_TYPE_RGB) {
     return FAILURE;
   }
-  row_size = (img->width * 3 + 3) / 4 * 4;
-  if ((buffer = malloc(row_size)) == NULL) {
+  stride = (img->width * 3 + 3) / 4 * 4;
+  if ((buffer = malloc(stride)) == NULL) {
     return FAILURE;
   }
   file->bfType = FILE_TYPE;
-  file->bfSize = DEFAULT_HEADER_SIZE + row_size * img->height;
+  file->bfSize = DEFAULT_HEADER_SIZE + stride * img->height;
   file->bfReserved1 = 0;
   file->bfReserved2 = 0;
   file->bfOffBits = DEFAULT_HEADER_SIZE;
@@ -188,7 +189,7 @@ result_t write_bmp_simple_stream(FILE *fp, image_t *img) {
   info->biPlanes = 1;
   info->biBitCount = 24;
   info->biCompression = 0;
-  info->biSizeImage = row_size * img->height;
+  info->biSizeImage = stride * img->height;
   info->biXPelsPerMeter = 0;
   info->biYPelsPerMeter = 0;
   info->biClrUsed = 0;
@@ -196,14 +197,15 @@ result_t write_bmp_simple_stream(FILE *fp, image_t *img) {
   if (fwrite(header_buffer, DEFAULT_HEADER_SIZE, 1, fp) != 1) {
     goto error;
   }
-  memset(buffer, 0, row_size);
+  memset(buffer, 0, stride);
   for (y = img->height - 1; y >= 0; y--) {
+    row = buffer;
     for (x = 0; x < img->width; x++) {
-      buffer[x * 3 + 0] = img->map[y][x].c.b;
-      buffer[x * 3 + 1] = img->map[y][x].c.g;
-      buffer[x * 3 + 2] = img->map[y][x].c.r;
+      *row++ = img->map[y][x].c.b;
+      *row++ = img->map[y][x].c.g;
+      *row++ = img->map[y][x].c.r;
     }
-    if (fwrite(buffer, row_size, 1, fp) != 1) {
+    if (fwrite(buffer, stride, 1, fp) != 1) {
       goto error;
     }
   }

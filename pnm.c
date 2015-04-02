@@ -243,15 +243,15 @@ static result_t read_p3(FILE *fp, image_t *img, int max) {
 static result_t read_p4(FILE *fp, image_t *img) {
   int x, y;
   uint8_t *row;
-  int row_size;
-  row_size = (img->width + 7) / 8;
-  if ((row = malloc(row_size)) == NULL) {
+  int stride;
+  stride = (img->width + 7) / 8;
+  if ((row = malloc(stride)) == NULL) {
     return FAILURE;
   }
   for (y = 0; y < img->height; y++) {
     int pos = 0;
     int shift = 8;
-    if (fread(row, row_size, 1, fp) != 1) {
+    if (fread(row, stride, 1, fp) != 1) {
       free(row);
       return FAILURE;
     }
@@ -280,19 +280,19 @@ static result_t read_p5(FILE *fp, image_t *img, int max) {
   int x, y;
   int tmp;
   uint8_t *row;
-  uint8_t *row_base;
-  int row_size;
+  uint8_t *buffer;
+  int stride;
   int bpc = max > 255 ? 2 : 1;
-  row_size = img->width * bpc;
-  if ((row_base = malloc(row_size)) == NULL) {
+  stride = img->width * bpc;
+  if ((buffer = malloc(stride)) == NULL) {
     return FAILURE;
   }
   for (y = 0; y < img->height; y++) {
-    if (fread(row_base, row_size, 1, fp) != 1) {
-      free(row_base);
+    if (fread(buffer, stride, 1, fp) != 1) {
+      free(buffer);
       return FAILURE;
     }
-    row = row_base;
+    row = buffer;
     if (bpc == 1) {
       for (x = 0; x < img->width; x++) {
         img->map[y][x].g = normalize(*row++, max);
@@ -305,7 +305,7 @@ static result_t read_p5(FILE *fp, image_t *img, int max) {
       }
     }
   }
-  free(row_base);
+  free(buffer);
   return SUCCESS;
 }
 
@@ -321,19 +321,19 @@ static result_t read_p6(FILE *fp, image_t *img, int max) {
   int x, y;
   int tmp;
   uint8_t *row;
-  uint8_t *row_base;
-  int row_size;
+  uint8_t *buffer;
+  int stride;
   int bpc = max > 255 ? 2 : 1;
-  row_size = img->width * 3 * bpc;
-  if ((row_base = malloc(row_size)) == NULL) {
+  stride = img->width * 3 * bpc;
+  if ((buffer = malloc(stride)) == NULL) {
     return FAILURE;
   }
   for (y = 0; y < img->height; y++) {
-    if (fread(row_base, row_size, 1, fp) != 1) {
-      free(row_base);
+    if (fread(buffer, stride, 1, fp) != 1) {
+      free(buffer);
       return FAILURE;
     }
-    row = row_base;
+    row = buffer;
     if (bpc == 1) {
       for (x = 0; x < img->width; x++) {
         img->map[y][x].c.r = normalize(*row++, max);
@@ -356,7 +356,7 @@ static result_t read_p6(FILE *fp, image_t *img, int max) {
       }
     }
   }
-  free(row_base);
+  free(buffer);
   return SUCCESS;
 }
 

@@ -45,6 +45,7 @@ image_t *read_png_stream(FILE *fp) {
   image_t *img = NULL;
   png_structp png = NULL;
   png_infop info = NULL;
+  png_bytep row;
   png_bytepp rows;
   png_byte sig_bytes[8];
   if (fread(sig_bytes, sizeof(sig_bytes), 1, fp) != 1) {
@@ -81,8 +82,9 @@ image_t *read_png_stream(FILE *fp) {
         img->palette[i] = color_from_rgb(pc.red, pc.green, pc.blue);
       }
       for (y = 0; y < info->height; y++) {
+        row = rows[y];
         for (x = 0; x < info->width; x++) {
-          img->map[y][x].i = rows[y][x];
+          img->map[y][x].i = *row++;
         }
       }
       break;
@@ -92,8 +94,9 @@ image_t *read_png_stream(FILE *fp) {
         goto error;
       }
       for (y = 0; y < info->height; y++) {
+        row = rows[y];
         for (x = 0; x < info->width; x++) {
-          img->map[y][x].g = rows[y][x];
+          img->map[y][x].g = *row++;
         }
       }
       break;
@@ -103,10 +106,11 @@ image_t *read_png_stream(FILE *fp) {
         goto error;
       }
       for (y = 0; y < info->height; y++) {
+        row = rows[y];
         for (x = 0; x < info->width; x++) {
-          img->map[y][x].c.r = rows[y][x * 3 + 0];
-          img->map[y][x].c.g = rows[y][x * 3 + 1];
-          img->map[y][x].c.b = rows[y][x * 3 + 2];
+          img->map[y][x].c.r = *row++;
+          img->map[y][x].c.g = *row++;
+          img->map[y][x].c.b = *row++;
           img->map[y][x].c.a = 0xff;
         }
       }
@@ -117,11 +121,12 @@ image_t *read_png_stream(FILE *fp) {
         goto error;
       }
       for (y = 0; y < info->height; y++) {
+        row = rows[y];
         for (x = 0; x < info->width; x++) {
-          img->map[y][x].c.r = rows[y][x * 4 + 0];
-          img->map[y][x].c.g = rows[y][x * 4 + 1];
-          img->map[y][x].c.b = rows[y][x * 4 + 2];
-          img->map[y][x].c.a = rows[y][x * 4 + 3];
+          img->map[y][x].c.r = *row++;
+          img->map[y][x].c.g = *row++;
+          img->map[y][x].c.b = *row++;
+          img->map[y][x].c.a = *row++;
         }
       }
       break;
@@ -167,6 +172,7 @@ result_t write_png_stream(FILE *fp, image_t *img) {
   int color_type;
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
+  png_bytep row;
   png_bytepp rows = NULL;
   png_colorp palette = NULL;
   if (img == NULL) {
@@ -230,34 +236,38 @@ result_t write_png_stream(FILE *fp, image_t *img) {
       png_set_PLTE(png_ptr, info_ptr, palette, img->palette_num);
       png_free(png_ptr, palette);
       for (y = 0; y < img->height; y++) {
+        row = rows[y];
         for (x = 0; x < img->width; x++) {
-          rows[y][x] = img->map[y][x].i;
+          *row++ = img->map[y][x].i;
         }
       }
       break;
     case COLOR_TYPE_GRAY:  // グレースケール
       for (y = 0; y < img->height; y++) {
+        row = rows[y];
         for (x = 0; x < img->width; x++) {
-          rows[y][x] = img->map[y][x].g;
+          *row++ = img->map[y][x].g;
         }
       }
       break;
     case COLOR_TYPE_RGB:  // RGB
       for (y = 0; y < img->height; y++) {
+        row = rows[y];
         for (x = 0; x < img->width; x++) {
-          rows[y][x * 3 + 0] = img->map[y][x].c.r;
-          rows[y][x * 3 + 1] = img->map[y][x].c.g;
-          rows[y][x * 3 + 2] = img->map[y][x].c.b;
+          *row++ = img->map[y][x].c.r;
+          *row++ = img->map[y][x].c.g;
+          *row++ = img->map[y][x].c.b;
         }
       }
       break;
     case COLOR_TYPE_RGBA:  // RGBA
       for (y = 0; y < img->height; y++) {
+        row = rows[y];
         for (x = 0; x < img->width; x++) {
-          rows[y][x * 4 + 0] = img->map[y][x].c.r;
-          rows[y][x * 4 + 1] = img->map[y][x].c.g;
-          rows[y][x * 4 + 2] = img->map[y][x].c.b;
-          rows[y][x * 4 + 3] = img->map[y][x].c.a;
+          *row++ = img->map[y][x].c.r;
+          *row++ = img->map[y][x].c.g;
+          *row++ = img->map[y][x].c.b;
+          *row++ = img->map[y][x].c.a;
         }
       }
       break;
