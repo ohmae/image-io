@@ -538,7 +538,6 @@ static result_t write_p4(FILE *fp, image_t *img) {
   int x, y;
   uint8_t p;
   for (y = 0; y < img->height; y++) {
-    int pos = 0;
     int shift = 8;
     p = 0;
     // 上位ビットから詰め込み、1byte分たまったら出力
@@ -548,7 +547,6 @@ static result_t write_p4(FILE *fp, image_t *img) {
       if (shift == 0) {
         putc(p, fp);
         shift = 8;
-        pos++;
         p = 0;
       }
     }
