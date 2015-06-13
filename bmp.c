@@ -270,48 +270,21 @@ static void bs_write32(bs_t *bs, uint32_t data) {
  * @param[out] cmasks    色読み出しマスク
  */
 static void set_default_color_masks(uint16_t bit_count, channel_mask *cmasks) {
+  uint32_t masks[4];
   switch (bit_count) {
     case 32:  // Blue,Green,Red,Reserveの順に8bitずつ
-      cmasks[0].mask = 0x00ff0000;
-      cmasks[0].shift = 16;
-      cmasks[0].max = 0xff;
-      cmasks[1].mask = 0x0000ff00;
-      cmasks[1].shift = 8;
-      cmasks[1].max = 0xff;
-      cmasks[2].mask = 0x000000ff;
-      cmasks[2].shift = 0;
-      cmasks[2].max = 0xff;
-      cmasks[3].mask = 0x00000000;
-      cmasks[3].shift = 0;
-      cmasks[3].max = 0xff;
-      break;
-    case 24:  // Blue,Green,Redの順に8bitずつ
-      cmasks[0].mask = 0xff0000;
-      cmasks[0].shift = 16;
-      cmasks[0].max = 0xff;
-      cmasks[1].mask = 0x00ff00;
-      cmasks[1].shift = 8;
-      cmasks[1].max = 0xff;
-      cmasks[2].mask = 0x0000ff;
-      cmasks[2].shift = 0;
-      cmasks[2].max = 0xff;
-      cmasks[3].mask = 0x000000;
-      cmasks[3].shift = 0;
-      cmasks[3].max = 0xff;
+      masks[0] = 0x00ff0000;
+      masks[1] = 0x0000ff00;
+      masks[2] = 0x000000ff;
+      masks[3] = 0x00000000;
+      read_color_masks(masks, cmasks);
       break;
     case 16:  // Blue,Green,Redの順に5bitずつ、1bit余る
-      cmasks[0].mask = 0x7c00;
-      cmasks[0].shift = 10;
-      cmasks[0].max = 0x1f;
-      cmasks[1].mask = 0x03e0;
-      cmasks[1].shift = 5;
-      cmasks[1].max = 0x1f;
-      cmasks[2].mask = 0x001f;
-      cmasks[2].shift = 0;
-      cmasks[2].max = 0x1f;
-      cmasks[3].mask = 0x0000;
-      cmasks[3].shift = 0;
-      cmasks[3].max = 0xff;
+      masks[0] = 0x7c00;
+      masks[1] = 0x03e0;
+      masks[2] = 0x001f;
+      masks[3] = 0x0000;
+      read_color_masks(masks, cmasks);
       break;
     default:
       break;
@@ -804,8 +777,8 @@ static result_t read_bitmap(FILE *fp, bmp_header_t *header, image_t *img) {
     case 16:
       return read_bitmap_16(fp, header, stride, img);
     case 8:
-      case 4:
-      case 1:
+    case 4:
+    case 1:
       if (header->info.biCompression == BI_RGB) {
         return read_bitmap_index(fp, header, stride, img);
       }
@@ -824,7 +797,6 @@ image_t *read_bmp_file(const char *filename) {
   FILE *fp = fopen(filename, "rb");
   if (fp == NULL) {
     perror(filename);
-    ERR("");
     return NULL;
   }
   image_t *img = read_bmp_stream(fp);
