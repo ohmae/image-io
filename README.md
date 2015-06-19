@@ -22,3 +22,7 @@ Makefileも同梱しており、ビルドすることは可能ですが、実用
 - [BMPファイルフォーマット（簡易版）](http://www.mm2d.net/main/prog/c/image_io-04.html)
 - [BMP形式の読み込み（簡易版）](http://www.mm2d.net/main/prog/c/image_io-05.html)
 - [BMP形式の書き出し（簡易版）](http://www.mm2d.net/main/prog/c/image_io-06.html)
+- [BMPファイルフォーマット（Windows）](http://www.mm2d.net/main/prog/c/image_io-07.html)
+- [BMPファイルフォーマット（OS/2）](http://www.mm2d.net/main/prog/c/image_io-08.html)
+- [BMPファイルフォーマット（Windows拡張）](http://www.mm2d.net/main/prog/c/image_io-09.html)
+- [BMPファイルフォーマット（画像データ）](http://www.mm2d.net/main/prog/c/image_io-10.html)
