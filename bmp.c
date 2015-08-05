@@ -36,6 +36,14 @@
 #define V5_HEADER_SIZE    124     /**< WindowsV5拡張ヘッダサイズ */
 #define PALET_SIZE_MAX    (4*256) /**< パレットの最大サイズ */
 
+#define LCS_CALIBRATED_RGB                0
+#define LCS_sRGB                 0x73524742
+#define LCS_WINDOWS_COLOR_SPACE  0x57696E20
+#define LCS_GM_BUSINESS                   1
+#define LCS_GM_GRAPHICS                   2
+#define LCS_GM_IMAGES                     4
+#define LCS_GM_ABS_COLORIMETRIC           8
+
 /** 標準のヘッダサイズ */
 #define DEFAULT_HEADER_SIZE (FILE_HEADER_SIZE + INFO_HEADER_SIZE)
 /** INFOヘッダ最大サイズ */
@@ -50,27 +58,27 @@
  * pragmaが必要
  */
 typedef struct BITMAPFILEHEADER {
-  uint16_t bfType;      /**< ファイルタイプ、必ず"BM" */
-  uint32_t bfSize;      /**< ファイルサイズ */
+  uint16_t bfType; /**< ファイルタイプ、必ず"BM" */
+  uint32_t bfSize; /**< ファイルサイズ */
   uint16_t bfReserved1; /**< リザーブ */
   uint16_t bfReserved2; /**< リサーブ */
-  uint32_t bfOffBits;   /**< 先頭から画像情報までのオフセット、ヘッダ構造体＋パレットサイズ */
+  uint32_t bfOffBits; /**< 先頭から画像情報までのオフセット、ヘッダ構造体＋パレットサイズ */
 } BITMAPFILEHEADER;
 
 /**
  * @brief 画像情報ヘッダ
  */
 typedef struct BITMAPINFOHEADER {
-  uint32_t biSize;         /**< この構造体のサイズ */
-  int32_t biWidth;         /**< 画像の幅 */
-  int32_t biHeight;        /**< 画像の高さ */
-  uint16_t biPlanes;       /**< 画像の枚数、通常1 */
-  uint16_t biBitCount;     /**< 一色のビット数 */
-  uint32_t biCompression;  /**< 圧縮形式 */
-  uint32_t biSizeImage;    /**< 画像領域のサイズ */
+  uint32_t biSize; /**< この構造体のサイズ */
+  int32_t biWidth; /**< 画像の幅 */
+  int32_t biHeight; /**< 画像の高さ */
+  uint16_t biPlanes; /**< 画像の枚数、通常1 */
+  uint16_t biBitCount; /**< 一色のビット数 */
+  uint32_t biCompression; /**< 圧縮形式 */
+  uint32_t biSizeImage; /**< 画像領域のサイズ */
   int32_t biXPelsPerMeter; /**< 画像の横方向解像度情報 */
   int32_t biYPelsPerMeter; /**< 画像の縦方向解像度情報*/
-  uint32_t biClrUsed;      /**< カラーパレットのうち実際に使っている色の個数 */
+  uint32_t biClrUsed; /**< カラーパレットのうち実際に使っている色の個数 */
   uint32_t biClrImportant; /**< カラーパレットのうち重要な色の数 */
 } BITMAPINFOHEADER;
 
@@ -78,9 +86,9 @@ typedef struct BITMAPINFOHEADER {
  * @brief 色情報を読み出すためのチャンル情報
  */
 typedef struct channel_mask {
-  uint32_t mask;  /**< マスク */
+  uint32_t mask; /**< マスク */
   uint32_t shift; /**< シフト量 */
-  uint32_t max;   /**< 最大値 */
+  uint32_t max; /**< 最大値 */
 } channel_mask;
 
 /**
@@ -94,7 +102,7 @@ typedef struct channel_mask {
 typedef struct bmp_header_t {
   BITMAPFILEHEADER file; /**< ファイルヘッダ */
   BITMAPINFOHEADER info; /**< 情報ヘッダ */
-  channel_mask cmasks[4];  /**< 色読み出し情報 */
+  channel_mask cmasks[4]; /**< 色読み出し情報 */
 } bmp_header_t;
 
 /**
@@ -102,9 +110,9 @@ typedef struct bmp_header_t {
  */
 typedef struct bs_t {
   uint8_t *buffer; /**< バッファ */
-  size_t offset;   /**< 現在のオフセット */
-  size_t size;     /**< バッファのサイズ */
-  int error;       /**< エラー */
+  size_t offset; /**< 現在のオフセット */
+  size_t size; /**< バッファのサイズ */
+  int error; /**< エラー */
 } bs_t;
 
 static void bs_init(uint8_t *buffer, size_t size, bs_t *bs);
@@ -475,7 +483,7 @@ static result_t read_bmp_info_header(FILE *fp, bmp_header_t *header) {
   }
   if (header->info.biWidth <= 0
       || header->info.biHeight == 0
-      || header->info.biHeight == INT32_MIN) {
+  || header->info.biHeight == INT32_MIN) {
     // サイズ異常、widthは正の値である必要がある。
     // heightは0でなければ正負どちらであっても良いが、
     // INT32_MINの場合は符号反転不可能のため異常扱い
@@ -903,10 +911,17 @@ result_t write_bmp_stream(FILE *fp, image_t *img) {
   uint8_t *buffer = NULL;
   int bc;
   if (img == NULL) {
-    return result;
+    return FAILURE;
   }
-  // 一色あたりのビット数とパレットサイズを先に計算
+  if (img->color_type == COLOR_TYPE_GRAY) {
+    work = clone_image(img);
+    if (work == NULL) {
+      return FAILURE;
+    }
+    img = image_gray_to_index(work);
+  }
   if (img->color_type == COLOR_TYPE_INDEX) {
+    // 一色あたりのビット数とパレットサイズを先に計算
     if (img->palette_num <= 2) {
       bc = 1;
       palette_size = 2 * 4;
@@ -919,8 +934,9 @@ result_t write_bmp_stream(FILE *fp, image_t *img) {
     }
   } else if (img->color_type == COLOR_TYPE_RGB) {
     bc = 24;
+  } else if (img->color_type == COLOR_TYPE_RGBA) {
+    bc = 32;
   } else {
-    // 画像形式がRGBでない場合はRGBに変換して出力
     work = clone_image(img);
     if (work == NULL) {
       return FAILURE;
@@ -929,7 +945,9 @@ result_t write_bmp_stream(FILE *fp, image_t *img) {
     bc = 24;
   }
   int stride = (img->width * bc + 31) / 32 * 4;
-  buffer_size = DEFAULT_HEADER_SIZE;
+  int info_header_size = (bc == 32 ? V5_HEADER_SIZE : INFO_HEADER_SIZE);
+  int header_size = FILE_HEADER_SIZE + info_header_size;
+  buffer_size = header_size;
   if (buffer_size < palette_size) {
     buffer_size = palette_size;
   }
@@ -942,22 +960,49 @@ result_t write_bmp_stream(FILE *fp, image_t *img) {
   // ヘッダ情報書き出し
   bs_init(buffer, buffer_size, &bs);
   bs_write16(&bs, FILE_TYPE);  // bfType
-  bs_write32(&bs, DEFAULT_HEADER_SIZE + stride * img->height);  // bfSize
+  bs_write32(&bs, header_size + stride * img->height);  // bfSize
   bs_write16(&bs, 0);  // bfReserved1
   bs_write16(&bs, 0);  // bfReserved2
-  bs_write32(&bs, DEFAULT_HEADER_SIZE + palette_size);  // bfOffBits
-  bs_write32(&bs, INFO_HEADER_SIZE);  // biSize
+  bs_write32(&bs, header_size + palette_size);  // bfOffBits
+  bs_write32(&bs, info_header_size);  // biSize
   bs_write32(&bs, img->width);  // biWidth
   bs_write32(&bs, img->height);  // biHeight
   bs_write16(&bs, 1);  // biPlanes
   bs_write16(&bs, bc);  // biBitCount
-  bs_write32(&bs, BI_RGB);  // biCompression
+  if (bc == 32) {
+    bs_write32(&bs, BI_BITFIELDS);  // biCompression
+  } else {
+    bs_write32(&bs, BI_RGB);  // biCompression
+  }
   bs_write32(&bs, stride * img->height);  // biSizeImage
   bs_write32(&bs, 0);  // biXPelsPerMeter
   bs_write32(&bs, 0);  // biYPelsPerMeter
   bs_write32(&bs, img->palette_num);  // biClrUsed
   bs_write32(&bs, 0);  // biClrImportant
-  if (fwrite(buffer, DEFAULT_HEADER_SIZE, 1, fp) != 1) {
+  if (info_header_size == V5_HEADER_SIZE) {
+    bs_write32(&bs, 0xff000000);  // bV5RedMask
+    bs_write32(&bs, 0x00ff0000);  // bV5GreenMask
+    bs_write32(&bs, 0x0000ff00);  // bV5BlueMask
+    bs_write32(&bs, 0x000000ff);  // bV5AlphaMask
+    bs_write32(&bs, LCS_sRGB);  // bV5CSType
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzRed.ciexyzX
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzRed.ciexyzY
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzRed.ciexyzZ
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzGreen.ciexyzX
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzGreen.ciexyzY
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzGreen.ciexyzZ
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzBlue.ciexyzX
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzBlue.ciexyzY
+    bs_write32(&bs, 0);  // bV5Endpoints.ciexyzBlue.ciexyzZ
+    bs_write32(&bs, 0);  // bV5GammaRed
+    bs_write32(&bs, 0);  // bV5GammaGreen
+    bs_write32(&bs, 0);  // bV5GammaBlue
+    bs_write32(&bs, LCS_GM_GRAPHICS);  // bV5Intent
+    bs_write32(&bs, 0);  // bV5ProfileData
+    bs_write32(&bs, 0);  // bV5ProfileSize
+    bs_write32(&bs, 0);  // bV5Reserved
+  }
+  if (fwrite(buffer, header_size, 1, fp) != 1) {
     goto error;
   }
   if (palette_size != 0) {
@@ -975,7 +1020,22 @@ result_t write_bmp_stream(FILE *fp, image_t *img) {
       goto error;
     }
   }
-  if (bc == 24) {
+  if (bc == 32) {
+    int x, y;
+    for (y = img->height - 1; y >= 0; y--) {
+      memset(buffer, 0, stride);
+      bs_set_offset(&bs, 0);
+      for (x = 0; x < img->width; x++) {
+        bs_write8(&bs, img->map[y][x].c.a);
+        bs_write8(&bs, img->map[y][x].c.b);
+        bs_write8(&bs, img->map[y][x].c.g);
+        bs_write8(&bs, img->map[y][x].c.r);
+      }
+      if (fwrite(buffer, stride, 1, fp) != 1) {
+        goto error;
+      }
+    }
+  } else if (bc == 24) {
     int x, y;
     for (y = img->height - 1; y >= 0; y--) {
       memset(buffer, 0, stride);
