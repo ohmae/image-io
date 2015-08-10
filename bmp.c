@@ -1121,15 +1121,15 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
   int count;
   int reduction;
   uint8_t *raw = NULL;
-  uint8_t *work = NULL;
+  uint8_t *step = NULL;
   uint8_t *row = NULL;
   int image_size = 0;
   int cpb = 8 / bc; // 1Byteあたりの色数
   stride = (img->width * bc + 7) / 8;
   raw = malloc(stride);
-  work = malloc(stride);
+  step = malloc(stride);
   row = malloc(stride * 2);
-  if (raw == NULL || work == NULL || row == NULL) {
+  if (raw == NULL || step == NULL || row == NULL) {
     goto error;
   }
   for (y = img->height - 1; y >= 0; y--) {
@@ -1158,20 +1158,20 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
           && (tmp == raw[x + count])) {
         count++;
       }
-      work[x] = count;
+      step[x] = count;
     }
     // 圧縮データを作る
     bs_init(row, stride * 2, &bs);
     for (x = 0; x < stride; x += count) {
-      if (work[x] < 2) {
+      if (step[x] < 2) {
         count = reduction = 0;
         while ((x + count < stride)
             && (count * cpb < 255)
-            && (work[x + count] <= 2)) {
-          if (work[x + count] == 1) {
+            && (step[x + count] <= 2)) {
+          if (step[x + count] == 1) {
             reduction++;
           }
-          count += work[x + count];
+          count += step[x + count];
         }
         if (count * cpb > 255) { // 256になる可能性があるので戻す
           count -= 2;
@@ -1190,8 +1190,8 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
             bs_write8(&bs, 0);
           }
         } else { // エンコードモード
-          for (i = x; i < x + count; i += work[i]) {
-            num = work[i] * cpb;
+          for (i = x; i < x + count; i += step[i]) {
+            num = step[i] * cpb;
             if (num + i * cpb > img->width) {
               num--;
             }
@@ -1200,7 +1200,7 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
           }
         }
       } else { // エンコードモード
-        count = work[x];
+        count = step[x];
         num = count * cpb;
         if (num + x * cpb > img->width) {
           num--;
@@ -1227,7 +1227,7 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
   result = write_header(fp, img, bc, image_size, TRUE);
   error:
   free(raw);
-  free(work);
+  free(step);
   free(row);
   return result;
 }
