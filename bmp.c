@@ -1125,6 +1125,7 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
   uint8_t *row = NULL;
   int image_size = 0;
   int cpb = 8 / bc; // 1Byteあたりの色数
+  int count_max = 255 / cpb;
   stride = (img->width * bc + 7) / 8;
   raw = malloc(stride);
   step = malloc(stride);
@@ -1154,7 +1155,7 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
       count = 0;
       tmp = raw[x];
       while ((x + count < stride)
-          && (count * cpb < 255)
+          && (count < count_max)
           && (tmp == raw[x + count])) {
         count++;
       }
@@ -1166,7 +1167,7 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
       if (step[x] < 2) {
         count = reduction = 0;
         while ((x + count < stride)
-            && (count * cpb < 255)
+            && (count < count_max)
             && (step[x + count] <= 2)) {
           if (step[x + count] == 1) {
             reduction++;
