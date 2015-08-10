@@ -64,7 +64,7 @@ image_t *allocate_image(uint32_t width, uint32_t height, uint8_t type) {
     img->palette = NULL;
   }
   img->palette_num = 0;
-  if ((img->map = calloc(height, sizeof(color_t*))) == NULL) {
+  if ((img->map = calloc(height, sizeof(pixcel_t*))) == NULL) {
     goto error;
   }
   for (i = 0; i < height; i++) {

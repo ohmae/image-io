@@ -99,8 +99,8 @@ result_t write_jpeg_stream(FILE *fp, image_t *img);
 /* BMP形式の読み書き */
 image_t *read_bmp_file(const char *filename);
 image_t *read_bmp_stream(FILE *fp);
-result_t write_bmp_file(const char *filename, image_t *img);
-result_t write_bmp_stream(FILE *fp, image_t *img);
+result_t write_bmp_file(const char *filename, image_t *img, int compress);
+result_t write_bmp_stream(FILE *fp, image_t *img, int compress);
 
 image_t *read_bmp_simple_file(const char *filename);
 image_t *read_bmp_simple_stream(FILE *fp);

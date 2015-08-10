@@ -91,7 +91,7 @@ int main(int argc, char**argv) {
       strcpy(outname, "out/b-");
       strcat(outname, name);
       strcat(outname, ".bmp");
-      write_bmp_file(outname, img);
+      write_bmp_file(outname, img, FALSE);
       strcpy(outname, "out/simple-");
       strcat(outname, name);
       strcat(outname, ".bmp");
@@ -106,7 +106,7 @@ int main(int argc, char**argv) {
         strcpy(outname, "out/c-");
         strcat(outname, name);
         strcat(outname, ".bmp");
-        write_bmp_file(outname, img);
+        write_bmp_file(outname, img, FALSE);
       }
       img = image_to_gray(b);
       strcpy(outname, "out/d-");

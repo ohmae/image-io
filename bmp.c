@@ -58,27 +58,27 @@
  * pragmaが必要
  */
 typedef struct BITMAPFILEHEADER {
-  uint16_t bfType; /**< ファイルタイプ、必ず"BM" */
-  uint32_t bfSize; /**< ファイルサイズ */
+  uint16_t bfType;      /**< ファイルタイプ、必ず"BM" */
+  uint32_t bfSize;      /**< ファイルサイズ */
   uint16_t bfReserved1; /**< リザーブ */
   uint16_t bfReserved2; /**< リサーブ */
-  uint32_t bfOffBits; /**< 先頭から画像情報までのオフセット、ヘッダ構造体＋パレットサイズ */
+  uint32_t bfOffBits;   /**< 先頭から画像情報までのオフセット、ヘッダ構造体＋パレットサイズ */
 } BITMAPFILEHEADER;
 
 /**
  * @brief 画像情報ヘッダ
  */
 typedef struct BITMAPINFOHEADER {
-  uint32_t biSize; /**< この構造体のサイズ */
-  int32_t biWidth; /**< 画像の幅 */
-  int32_t biHeight; /**< 画像の高さ */
-  uint16_t biPlanes; /**< 画像の枚数、通常1 */
-  uint16_t biBitCount; /**< 一色のビット数 */
-  uint32_t biCompression; /**< 圧縮形式 */
-  uint32_t biSizeImage; /**< 画像領域のサイズ */
+  uint32_t biSize;         /**< この構造体のサイズ */
+  int32_t biWidth;         /**< 画像の幅 */
+  int32_t biHeight;        /**< 画像の高さ */
+  uint16_t biPlanes;       /**< 画像の枚数、通常1 */
+  uint16_t biBitCount;     /**< 一色のビット数 */
+  uint32_t biCompression;  /**< 圧縮形式 */
+  uint32_t biSizeImage;    /**< 画像領域のサイズ */
   int32_t biXPelsPerMeter; /**< 画像の横方向解像度情報 */
   int32_t biYPelsPerMeter; /**< 画像の縦方向解像度情報*/
-  uint32_t biClrUsed; /**< カラーパレットのうち実際に使っている色の個数 */
+  uint32_t biClrUsed;      /**< カラーパレットのうち実際に使っている色の個数 */
   uint32_t biClrImportant; /**< カラーパレットのうち重要な色の数 */
 } BITMAPINFOHEADER;
 
@@ -86,9 +86,9 @@ typedef struct BITMAPINFOHEADER {
  * @brief 色情報を読み出すためのチャンル情報
  */
 typedef struct channel_mask {
-  uint32_t mask; /**< マスク */
+  uint32_t mask;  /**< マスク */
   uint32_t shift; /**< シフト量 */
-  uint32_t max; /**< 最大値 */
+  uint32_t max;   /**< 最大値 */
 } channel_mask;
 
 /**
@@ -100,8 +100,8 @@ typedef struct channel_mask {
  * @brief BMPのヘッダ情報を集めた構造体
  */
 typedef struct bmp_header_t {
-  BITMAPFILEHEADER file; /**< ファイルヘッダ */
-  BITMAPINFOHEADER info; /**< 情報ヘッダ */
+  BITMAPFILEHEADER file;  /**< ファイルヘッダ */
+  BITMAPINFOHEADER info;  /**< 情報ヘッダ */
   channel_mask cmasks[4]; /**< 色読み出し情報 */
 } bmp_header_t;
 
@@ -110,9 +110,9 @@ typedef struct bmp_header_t {
  */
 typedef struct bs_t {
   uint8_t *buffer; /**< バッファ */
-  size_t offset; /**< 現在のオフセット */
-  size_t size; /**< バッファのサイズ */
-  int error; /**< エラー */
+  size_t offset;   /**< 現在のオフセット */
+  size_t size;     /**< バッファのサイズ */
+  int error;       /**< エラー */
 } bs_t;
 
 static void bs_init(uint8_t *buffer, size_t size, bs_t *bs);
@@ -126,15 +126,23 @@ static void bs_write32(bs_t *bs, uint32_t data);
 
 static void set_default_color_masks(uint16_t bit_count, channel_mask *cmasks);
 static void read_color_masks(uint32_t *masks, channel_mask *cmasks);
-static result_t read_bmp_file_header(FILE *fp, bmp_header_t *header);
-static result_t read_bmp_info_header(FILE *fp, bmp_header_t *header);
-static result_t read_pallette(FILE *fp, bmp_header_t *header, image_t *img);
+static result_t read_file_header(FILE *fp, bmp_header_t *header);
+static result_t read_info_header(FILE *fp, bmp_header_t *header);
+static result_t read_palette(FILE *fp, bmp_header_t *header, image_t *img);
 static result_t read_bitmap_32(FILE *fp, bmp_header_t *header, int stride, image_t *img);
 static result_t read_bitmap_24(FILE *fp, bmp_header_t *header, int stride, image_t *img);
 static result_t read_bitmap_16(FILE *fp, bmp_header_t *header, int stride, image_t *img);
 static result_t read_bitmap_index(FILE *fp, bmp_header_t *header, int stride, image_t *img);
-static result_t read_bitmap_rle(FILE *fp, bmp_header_t *header, image_t *img);
+static result_t read_bitmap_rle(FILE *fp, bmp_header_t *header, int stride, image_t *img);
 static result_t read_bitmap(FILE *fp, bmp_header_t *header, image_t *img);
+
+static result_t write_header(FILE *fp, image_t *img, int bc, int image_size, int compress);
+static result_t write_palette(FILE *fp, image_t *img, int bc);
+static result_t write_bitmap_32(FILE *fp, image_t *img, int bc, int stride);
+static result_t write_bitmap_24(FILE *fp, image_t *img, int bc, int stride);
+static result_t write_bitmap_index(FILE *fp, image_t *img, int bc, int stride);
+static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride);
+static result_t write_bitmap(FILE *fp, image_t *img, int bc, int compress);
 
 /**
  * @brief バイトストリームを初期化する
@@ -335,7 +343,7 @@ static void read_color_masks(uint32_t *masks, channel_mask *cmasks) {
  * @param[out] header ヘッダ情報
  * @return 成否
  */
-static result_t read_bmp_file_header(FILE *fp, bmp_header_t *header) {
+static result_t read_file_header(FILE *fp, bmp_header_t *header) {
   bs_t bs;
   uint8_t buffer[FILE_HEADER_SIZE];
   if (fread(buffer, FILE_HEADER_SIZE, 1, fp) != 1) {
@@ -365,7 +373,7 @@ static result_t read_bmp_file_header(FILE *fp, bmp_header_t *header) {
  * @param[out]    cmasks 読み出しマスクの格納先
  * @return 成否
  */
-static result_t read_bmp_info_header(FILE *fp, bmp_header_t *header) {
+static result_t read_info_header(FILE *fp, bmp_header_t *header) {
   bs_t bs;
   uint8_t buffer[INFO_HEADER_SIZE_MAX];
   int buf_size = 4;
@@ -483,7 +491,7 @@ static result_t read_bmp_info_header(FILE *fp, bmp_header_t *header) {
   }
   if (header->info.biWidth <= 0
       || header->info.biHeight == 0
-  || header->info.biHeight == INT32_MIN) {
+      || header->info.biHeight == INT32_MIN) {
     // サイズ異常、widthは正の値である必要がある。
     // heightは0でなければ正負どちらであっても良いが、
     // INT32_MINの場合は符号反転不可能のため異常扱い
@@ -500,7 +508,7 @@ static result_t read_bmp_info_header(FILE *fp, bmp_header_t *header) {
  * @param[out] img    画像構造体
  * @return 成否
  */
-static result_t read_pallette(FILE *fp, bmp_header_t *header, image_t *img) {
+static result_t read_palette(FILE *fp, bmp_header_t *header, image_t *img) {
   int i;
   bs_t bs;
   uint8_t buffer[PALET_SIZE_MAX];
@@ -543,10 +551,10 @@ static result_t read_pallette(FILE *fp, bmp_header_t *header, image_t *img) {
 /**
  * @brief BitCount=32のビットマップ情報を読み込む
  *
- * @param[in]  fp       ファイルストリーム
- * @param[in]  header   ヘッダ情報
- * @param[in]  stride   1行のサイズ
- * @param[out] img      画像構造体
+ * @param[in]  fp     ファイルストリーム
+ * @param[in]  header ヘッダ情報
+ * @param[in]  stride 1行のサイズ
+ * @param[out] img    画像構造体
  * @return 成否
  */
 static result_t read_bitmap_32(
@@ -584,10 +592,10 @@ static result_t read_bitmap_32(
 /**
  * @brief BitCount=24のビットマップ情報を読み込む
  *
- * @param[in]  fp       ファイルストリーム
- * @param[in]  header   ヘッダ情報
- * @param[in]  stride   1行のサイズ
- * @param[out] img      画像構造体
+ * @param[in]  fp     ファイルストリーム
+ * @param[in]  header ヘッダ情報
+ * @param[in]  stride 1行のサイズ
+ * @param[out] img    画像構造体
  * @return 成否
  */
 static result_t read_bitmap_24(
@@ -620,10 +628,10 @@ static result_t read_bitmap_24(
 /**
  * @brief BitCount=16のビットマップ情報を読み込む
  *
- * @param[in]  fp       ファイルストリーム
- * @param[in]  header   ヘッダ情報
- * @param[in]  stride   1行のサイズ
- * @param[out] img      画像構造体
+ * @param[in]  fp     ファイルストリーム
+ * @param[in]  header ヘッダ情報
+ * @param[in]  stride 1行のサイズ
+ * @param[out] img    画像構造体
  * @return 成否
  */
 static result_t read_bitmap_16(
@@ -661,10 +669,10 @@ static result_t read_bitmap_16(
 /**
  * @brief インデックスカラーのビットマップ情報を読み込む
  *
- * @param[in]  fp       ファイルストリーム
- * @param[in]  header   ヘッダ情報
- * @param[in]  stride   1行のサイズ
- * @param[out] img      画像構造体
+ * @param[in]  fp     ファイルストリーム
+ * @param[in]  header ヘッダ情報
+ * @param[in]  stride 1行のサイズ
+ * @param[out] img    画像構造体
  * @return 成否
  */
 static result_t read_bitmap_index(
@@ -704,13 +712,14 @@ static result_t read_bitmap_index(
 /**
  * @brief RLE4/RLE8のビットマップ情報を読み込む
  *
- * @param[in]  fp       ファイルストリーム
- * @param[in]  header   ヘッダ情報
- * @param[out] img      画像構造体
+ * @param[in]  fp     ファイルストリーム
+ * @param[in]  header ヘッダ情報
+ * @param[in]  stride 1行のサイズ
+ * @param[out] img    画像構造体
  * @return 成否
  */
 static result_t read_bitmap_rle(
-    FILE *fp, bmp_header_t *header, image_t *img) {
+    FILE *fp, bmp_header_t *header, int stride, image_t *img) {
   int x, y, i;
   bs_t bs;
   uint8_t buffer[256];
@@ -790,7 +799,7 @@ static result_t read_bitmap(FILE *fp, bmp_header_t *header, image_t *img) {
       if (header->info.biCompression == BI_RGB) {
         return read_bitmap_index(fp, header, stride, img);
       }
-      return read_bitmap_rle(fp, header, img);
+      return read_bitmap_rle(fp, header, stride, img);
   }
   return FAILURE;
 }
@@ -824,8 +833,8 @@ image_t *read_bmp_stream(FILE *fp) {
   int height;
   uint16_t color_type;
   memset(&header, 0, sizeof(header));
-  if ((read_bmp_file_header(fp, &header) != SUCCESS) ||
-      (read_bmp_info_header(fp, &header) != SUCCESS)) {
+  if ((read_file_header(fp, &header) != SUCCESS) ||
+      (read_info_header(fp, &header) != SUCCESS)) {
     return NULL;
   }
   if (header.info.biBitCount <= 8) {
@@ -840,7 +849,7 @@ image_t *read_bmp_stream(FILE *fp) {
     return NULL;
   }
   if (color_type == COLOR_TYPE_INDEX) {
-    if (read_pallette(fp, &header, img) != SUCCESS) {
+    if (read_palette(fp, &header, img) != SUCCESS) {
       goto error;
     }
   }
@@ -866,101 +875,33 @@ image_t *read_bmp_stream(FILE *fp) {
 }
 
 /**
- * @brief BMP形式としてファイルに書き出す。
+ * @brief ファイルヘッダを書き出す
  *
- * Windows形式（BITMAPINFOHEADER）のBI_RGBでのみ出力
- * COLOR_TYPE_PALETTEの場合は、
- * インデックスカラー形式として書き出す。
- *
- * @param[in] filename 書き出すファイル名
- * @param[in] img      画像データ
+ * @param[in] fp         ファイルストリーム
+ * @param[in] img        画像データ
+ * @param[in] bc         1色あたりのビット数
+ * @param[in] image_size 画像サイズ
+ * @param[in] compress   TRUEの時RLEを使用する
  * @return 成否
  */
-result_t write_bmp_file(const char *filename, image_t *img) {
-  result_t result = FAILURE;
-  if (img == NULL) {
-    return result;
-  }
-  FILE *fp = fopen(filename, "wb");
-  if (fp == NULL) {
-    perror(filename);
-    return result;
-  }
-  result = write_bmp_stream(fp, img);
-  fclose(fp);
-  return result;
-}
-
-/**
- * @brief BMP形式としてファイルに書き出す。
- *
- * Windows形式（BITMAPINFOHEADER）のBI_RGBでのみ出力
- * COLOR_TYPE_PALETTEの場合は、
- * インデックスカラー形式として書き出す。
- *
- * @param[in] fp  書き出すファイルストリームのポインタ
- * @param[in] img 画像データ
- * @return 成否
- */
-result_t write_bmp_stream(FILE *fp, image_t *img) {
+static result_t write_header(
+    FILE *fp, image_t *img, int bc, int image_size, int compress) {
   result_t result = FAILURE;
   bs_t bs;
-  image_t *work = NULL;
-  int palette_size = 0;
-  int buffer_size;
-  uint8_t *buffer = NULL;
-  int bc;
-  if (img == NULL) {
-    return FAILURE;
-  }
-  if (img->color_type == COLOR_TYPE_GRAY) {
-    work = clone_image(img);
-    if (work == NULL) {
-      return FAILURE;
-    }
-    img = image_gray_to_index(work);
-  }
-  if (img->color_type == COLOR_TYPE_INDEX) {
-    // 一色あたりのビット数とパレットサイズを先に計算
-    if (img->palette_num <= 2) {
-      bc = 1;
-      palette_size = 2 * 4;
-    } else if (img->palette_num <= 16) {
-      bc = 4;
-      palette_size = 16 * 4;
-    } else {
-      bc = 8;
-      palette_size = 256 * 4;
-    }
-  } else if (img->color_type == COLOR_TYPE_RGB) {
-    bc = 24;
-  } else if (img->color_type == COLOR_TYPE_RGBA) {
-    bc = 32;
-  } else {
-    work = clone_image(img);
-    if (work == NULL) {
-      return FAILURE;
-    }
-    img = image_to_rgb(work);
-    bc = 24;
-  }
-  int stride = (img->width * bc + 31) / 32 * 4;
+  uint8_t *header = NULL;
   int info_header_size = (bc == 32 ? V5_HEADER_SIZE : INFO_HEADER_SIZE);
   int header_size = FILE_HEADER_SIZE + info_header_size;
-  buffer_size = header_size;
-  if (buffer_size < palette_size) {
-    buffer_size = palette_size;
+  int palette_size = 0;
+  if (bc <= 8) {
+    palette_size = (1 << bc) * 4;
   }
-  if (buffer_size < stride) {
-    buffer_size = stride;
-  }
-  if ((buffer = malloc(buffer_size)) == NULL) {
-    goto error;
+  if ((header = calloc(header_size, 1)) == NULL) {
+    return FAILURE;
   }
   // ヘッダ情報書き出し
-  bs_init(buffer, buffer_size, &bs);
+  bs_init(header, header_size, &bs);
   bs_write16(&bs, FILE_TYPE);  // bfType
-  bs_write32(&bs, header_size + stride * img->height);  // bfSize
+  bs_write32(&bs, header_size + palette_size + image_size);  // bfSize
   bs_write16(&bs, 0);  // bfReserved1
   bs_write16(&bs, 0);  // bfReserved2
   bs_write32(&bs, header_size + palette_size);  // bfOffBits
@@ -969,17 +910,21 @@ result_t write_bmp_stream(FILE *fp, image_t *img) {
   bs_write32(&bs, img->height);  // biHeight
   bs_write16(&bs, 1);  // biPlanes
   bs_write16(&bs, bc);  // biBitCount
-  if (bc == 32) {
-    bs_write32(&bs, BI_BITFIELDS);  // biCompression
+  if (bc == 32) {  // biCompression
+    bs_write32(&bs, BI_BITFIELDS);
+  } else if (bc == 8 && compress) {
+    bs_write32(&bs, BI_RLE8);
+  } else if (bc == 4 && compress) {
+    bs_write32(&bs, BI_RLE4);
   } else {
-    bs_write32(&bs, BI_RGB);  // biCompression
+    bs_write32(&bs, BI_RGB);
   }
-  bs_write32(&bs, stride * img->height);  // biSizeImage
+  bs_write32(&bs, image_size);  // biSizeImage
   bs_write32(&bs, 0);  // biXPelsPerMeter
   bs_write32(&bs, 0);  // biYPelsPerMeter
   bs_write32(&bs, img->palette_num);  // biClrUsed
   bs_write32(&bs, 0);  // biClrImportant
-  if (info_header_size == V5_HEADER_SIZE) {
+  if (bc == 32) {
     bs_write32(&bs, 0xff000000);  // bV5RedMask
     bs_write32(&bs, 0x00ff0000);  // bV5GreenMask
     bs_write32(&bs, 0x0000ff00);  // bV5BlueMask
@@ -1002,80 +947,402 @@ result_t write_bmp_stream(FILE *fp, image_t *img) {
     bs_write32(&bs, 0);  // bV5ProfileSize
     bs_write32(&bs, 0);  // bV5Reserved
   }
-  if (fwrite(buffer, header_size, 1, fp) != 1) {
+  if (fwrite(header, header_size, 1, fp) != 1) {
     goto error;
   }
-  if (palette_size != 0) {
-    int i;
-    uint8_t tmp = 0;
-    memset(buffer, 0, palette_size);
-    bs_set_offset(&bs, 0);
-    for (i = 0; i < img->palette_num; i++) {
-      bs_write8(&bs, img->palette[i].b);
-      bs_write8(&bs, img->palette[i].g);
-      bs_write8(&bs, img->palette[i].r);
-      bs_write8(&bs, tmp);
-    }
-    if (fwrite(buffer, palette_size, 1, fp) != 1) {
-      goto error;
-    }
+  result = SUCCESS;
+  error: free(header);
+  return result;
+}
+
+/**
+ * @brief パレット情報を書き出す
+ *
+ * @param[in] fp  ファイルストリーム
+ * @param[in] img 画像データ
+ * @param[in] bc  1色あたりのビット数
+ * @return 成否
+ */
+static result_t write_palette(FILE *fp, image_t *img, int bc) {
+  result_t result = FAILURE;
+  bs_t bs;
+  int i;
+  uint8_t *buffer = NULL;
+  int palette_size = (1 << bc) * 4;
+  if ((buffer = calloc(palette_size, 1)) == NULL) {
+    return FAILURE;
   }
-  if (bc == 32) {
-    int x, y;
-    for (y = img->height - 1; y >= 0; y--) {
-      memset(buffer, 0, stride);
-      bs_set_offset(&bs, 0);
-      for (x = 0; x < img->width; x++) {
-        bs_write8(&bs, img->map[y][x].c.a);
-        bs_write8(&bs, img->map[y][x].c.b);
-        bs_write8(&bs, img->map[y][x].c.g);
-        bs_write8(&bs, img->map[y][x].c.r);
-      }
-      if (fwrite(buffer, stride, 1, fp) != 1) {
-        goto error;
-      }
-    }
-  } else if (bc == 24) {
-    int x, y;
-    for (y = img->height - 1; y >= 0; y--) {
-      memset(buffer, 0, stride);
-      bs_set_offset(&bs, 0);
-      for (x = 0; x < img->width; x++) {
-        bs_write8(&bs, img->map[y][x].c.b);
-        bs_write8(&bs, img->map[y][x].c.g);
-        bs_write8(&bs, img->map[y][x].c.r);
-      }
-      if (fwrite(buffer, stride, 1, fp) != 1) {
-        goto error;
-      }
-    }
-  } else {
-    int x, y;
-    for (y = img->height - 1; y >= 0; y--) {
-      memset(buffer, 0, stride);
-      bs_set_offset(&bs, 0);
-      int shift = 8;
-      uint8_t tmp = 0;
-      for (x = 0; x < img->width; x++) {
-        shift -= bc;
-        tmp |= img->map[y][x].i << shift;
-        if (shift == 0) {
-          shift = 8;
-          bs_write8(&bs, tmp);
-          tmp = 0;
-        }
-      }
-      if (shift != 8) {
-        bs_write8(&bs, tmp);
-      }
-      if (fwrite(buffer, stride, 1, fp) != 1) {
-        goto error;
-      }
-    }
+  bs_init(buffer, palette_size, &bs);
+  for (i = 0; i < img->palette_num; i++) {
+    bs_write8(&bs, img->palette[i].b);
+    bs_write8(&bs, img->palette[i].g);
+    bs_write8(&bs, img->palette[i].r);
+    bs_write8(&bs, 0);
+  }
+  if (fwrite(buffer, palette_size, 1, fp) != 1) {
+    goto error;
   }
   result = SUCCESS;
   error:
   free(buffer);
+  return result;
+}
+
+/**
+ * @brief BitCount=32のビットマップ情報を書き出す
+ *
+ * @param[in] fp     ファイルストリーム
+ * @param[in] img    画像データ
+ * @param[in] bc     1色あたりのビット数
+ * @param[in] stride 1行のサイズ
+ * @return 成否
+ */
+static result_t write_bitmap_32(FILE *fp, image_t *img, int bc, int stride) {
+  result_t result = FAILURE;
+  bs_t bs;
+  int x, y;
+  uint8_t *row = NULL;
+  if ((row = calloc(stride, 1)) == NULL) {
+    goto error;
+  }
+  bs_init(row, stride, &bs);
+  for (y = img->height - 1; y >= 0; y--) {
+    bs_set_offset(&bs, 0);
+    for (x = 0; x < img->width; x++) {
+      bs_write8(&bs, img->map[y][x].c.a);
+      bs_write8(&bs, img->map[y][x].c.b);
+      bs_write8(&bs, img->map[y][x].c.g);
+      bs_write8(&bs, img->map[y][x].c.r);
+    }
+    if (fwrite(row, stride, 1, fp) != 1) {
+      goto error;
+    }
+  }
+  result = SUCCESS;
+  error:
+  free(row);
+  return result;
+}
+
+/**
+ * @brief BitCount=24のビットマップ情報を書き出す
+ *
+ * @param[in] fp     ファイルストリーム
+ * @param[in] img    画像データ
+ * @param[in] bc     1色あたりのビット数
+ * @param[in] stride 1行のサイズ
+ * @return 成否
+ */
+static result_t write_bitmap_24(FILE *fp, image_t *img, int bc, int stride) {
+  result_t result = FAILURE;
+  bs_t bs;
+  int x, y;
+  uint8_t *row = NULL;
+  if ((row = calloc(stride, 1)) == NULL) {
+    goto error;
+  }
+  bs_init(row, stride, &bs);
+  for (y = img->height - 1; y >= 0; y--) {
+    bs_set_offset(&bs, 0);
+    for (x = 0; x < img->width; x++) {
+      bs_write8(&bs, img->map[y][x].c.b);
+      bs_write8(&bs, img->map[y][x].c.g);
+      bs_write8(&bs, img->map[y][x].c.r);
+    }
+    if (fwrite(row, stride, 1, fp) != 1) {
+      goto error;
+    }
+  }
+  result = SUCCESS;
+  error:
+  free(row);
+  return result;
+}
+
+/**
+ * @brief インデックスカラーのビットマップ情報を書き出す
+ *
+ * @param[in] fp     ファイルストリーム
+ * @param[in] img    画像データ
+ * @param[in] bc     1色あたりのビット数
+ * @param[in] stride 1行のサイズ
+ * @return 成否
+ */
+static result_t write_bitmap_index(FILE *fp, image_t *img, int bc, int stride) {
+  result_t result = FAILURE;
+  bs_t bs;
+  int x, y;
+  uint8_t *row = NULL;
+  if ((row = calloc(stride, 1)) == NULL) {
+    goto error;
+  }
+  bs_init(row, stride, &bs);
+  for (y = img->height - 1; y >= 0; y--) {
+    int shift = 8;
+    uint8_t tmp = 0;
+    bs_set_offset(&bs, 0);
+    for (x = 0; x < img->width; x++) {
+      shift -= bc;
+      tmp |= img->map[y][x].i << shift;
+      if (shift == 0) {
+        shift = 8;
+        bs_write8(&bs, tmp);
+        tmp = 0;
+      }
+    }
+    if (shift != 8) {
+      bs_write8(&bs, tmp);
+    }
+    if (fwrite(row, stride, 1, fp) != 1) {
+      goto error;
+    }
+  }
+  result = SUCCESS;
+  error:
+  free(row);
+  return result;
+}
+
+/**
+ * @brief インデックスカラーのビットマップ情報をRLE形式で書き出す
+ *
+ * @param[in] fp     ファイルストリーム
+ * @param[in] img    画像データ
+ * @param[in] bc     1色あたりのビット数
+ * @param[in] stride 1行のサイズ
+ * @return 成否
+ */
+static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
+  result_t result = FAILURE;
+  bs_t bs;
+  int i;
+  int x, y;
+  int num;
+  int count;
+  int reduction;
+  uint8_t *raw = NULL;
+  uint8_t *work = NULL;
+  uint8_t *row = NULL;
+  int image_size = 0;
+  int cpb = 8 / bc; // 1Byteあたりの色数
+  stride = (img->width * bc + 7) / 8;
+  raw = malloc(stride);
+  work = malloc(stride);
+  row = malloc(stride * 2);
+  if (raw == NULL || work == NULL || row == NULL) {
+    goto error;
+  }
+  for (y = img->height - 1; y >= 0; y--) {
+    // 非圧縮データを作る
+    int shift = 8;
+    uint8_t tmp = 0;
+    bs_init(raw, stride, &bs);
+    for (x = 0; x < img->width; x++) {
+      shift -= bc;
+      tmp |= img->map[y][x].i << shift;
+      if (shift == 0) {
+        shift = 8;
+        bs_write8(&bs, tmp);
+        tmp = 0;
+      }
+    }
+    if (shift != 8) {
+      bs_write8(&bs, tmp);
+    }
+    // 非圧縮データの連続数を記録する
+    for (x = 0; x < stride; x += count) {
+      count = 0;
+      tmp = raw[x];
+      while ((x + count < stride)
+          && (count * cpb < 255)
+          && (tmp == raw[x + count])) {
+        count++;
+      }
+      work[x] = count;
+    }
+    // 圧縮データを作る
+    bs_init(row, stride * 2, &bs);
+    for (x = 0; x < stride; x += count) {
+      if (work[x] < 2) {
+        count = reduction = 0;
+        while ((x + count < stride)
+            && (count * cpb < 255)
+            && (work[x + count] <= 2)) {
+          if (work[x + count] == 1) {
+            reduction++;
+          }
+          count += work[x + count];
+        }
+        if (count * cpb > 255) { // 256になる可能性があるので戻す
+          count -= 2;
+        }
+        if (reduction > 2) { // 絶対モード
+          bs_write8(&bs, 0);
+          num = count * cpb;
+          if (num + x * cpb > img->width) {
+            num--;
+          }
+          bs_write8(&bs, num);
+          for (i = x; i < x + count; i++) {
+            bs_write8(&bs, raw[i]);
+          }
+          if (count % 2) {
+            bs_write8(&bs, 0);
+          }
+        } else { // エンコードモード
+          for (i = x; i < x + count; i += work[i]) {
+            num = work[i] * cpb;
+            if (num + i * cpb > img->width) {
+              num--;
+            }
+            bs_write8(&bs, num);
+            bs_write8(&bs, raw[i]);
+          }
+        }
+      } else { // エンコードモード
+        count = work[x];
+        num = count * cpb;
+        if (num + x * cpb > img->width) {
+          num--;
+        }
+        bs_write8(&bs, num);
+        bs_write8(&bs, raw[x]);
+      }
+    }
+    if (y == 0) { // EOF
+      bs_write8(&bs, 0);
+      bs_write8(&bs, 1);
+    } else { // EOL
+      bs_write8(&bs, 0);
+      bs_write8(&bs, 0);
+    }
+    if (fwrite(row, bs.offset, 1, fp) != 1) {
+      goto error;
+    }
+    image_size += bs.offset;
+  }
+  if (fseek(fp, 0, SEEK_SET) != 0) {
+    goto error;
+  }
+  result = write_header(fp, img, bc, image_size, TRUE);
+  error:
+  free(raw);
+  free(work);
+  free(row);
+  return result;
+}
+
+/**
+ * @brief インデックスカラーのビットマップ情報をRLE形式で書き出す
+ *
+ * @param[in] fp       ファイルストリーム
+ * @param[in] img      画像データ
+ * @param[in] bc       1色あたりのビット数
+ * @param[in] compress TRUEの時RLE圧縮を行う
+ * @return 成否
+ */
+static result_t write_bitmap(FILE *fp, image_t *img, int bc, int compress) {
+  int stride = (img->width * bc + 31) / 32 * 4;
+  switch (bc) {
+    case 32:
+      return write_bitmap_32(fp, img, bc, stride);
+    case 24:
+      return write_bitmap_24(fp, img, bc, stride);
+    case 8:
+    case 4:
+      if (compress) {
+        return write_bitmap_rle(fp, img, bc, stride);
+      } else {
+        return write_bitmap_index(fp, img, bc, stride);
+      }
+    case 1:
+      return write_bitmap_index(fp, img, bc, stride);
+    default:
+      break;
+  }
+  return FAILURE;
+}
+
+/**
+ * @brief BMP形式としてファイルに書き出す。
+ *
+ * Windows形式（BITMAPINFOHEADER）のBI_RGBでのみ出力
+ * COLOR_TYPE_PALETTEの場合は、
+ * インデックスカラー形式として書き出す。
+ *
+ * @param[in] filename 書き出すファイル名
+ * @param[in] img      画像データ
+ * @param[in] compress TRUEの時RLE圧縮を行う
+ * @return 成否
+ */
+result_t write_bmp_file(const char *filename, image_t *img, int compress) {
+  result_t result = FAILURE;
+  if (img == NULL) {
+    return result;
+  }
+  FILE *fp = fopen(filename, "wb");
+  if (fp == NULL) {
+    perror(filename);
+    return result;
+  }
+  result = write_bmp_stream(fp, img, compress);
+  fclose(fp);
+  return result;
+}
+
+/**
+ * @brief BMP形式としてファイルに書き出す。
+ *
+ * Windows形式（BITMAPINFOHEADER）のBI_RGBでのみ出力
+ * COLOR_TYPE_PALETTEの場合は、
+ * インデックスカラー形式として書き出す。
+ *
+ * @param[in] fp       書き出すファイルストリームのポインタ
+ * @param[in] img      画像データ
+ * @param[in] compress TRUEの時RLE圧縮を行う
+ * @return 成否
+ */
+result_t write_bmp_stream(FILE *fp, image_t *img, int compress) {
+  result_t result = FAILURE;
+  image_t *work = NULL;
+  int bc;
+  int size;
+  if (img == NULL) {
+    return FAILURE;
+  }
+  if (img->color_type == COLOR_TYPE_GRAY) {
+    work = clone_image(img);
+    if (work == NULL) {
+      return FAILURE;
+    }
+    img = image_gray_to_index(work);
+  }
+  if (img->color_type == COLOR_TYPE_INDEX) {
+    if (img->palette_num <= 2) {
+      bc = 1;
+    } else if (img->palette_num <= 16) {
+      bc = 4;
+    } else {
+      bc = 8;
+    }
+  } else if (img->color_type == COLOR_TYPE_RGB) {
+    bc = 24;
+  } else if (img->color_type == COLOR_TYPE_RGBA) {
+    bc = 32;
+  } else {
+    goto error;
+  }
+  size = (img->width * bc + 31) / 32 * 4 * img->height;
+  if (write_header(fp, img, bc, size, compress) != SUCCESS) {
+    goto error;
+  }
+  if (bc <= 8) {
+    if (write_palette(fp, img, bc) != SUCCESS) {
+      goto error;
+    }
+  }
+  result = write_bitmap(fp, img, bc, compress);
+  error:
   free_image(work);
   return result;
 }
