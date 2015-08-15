@@ -61,7 +61,7 @@ image_t *read_jpeg_stream(FILE *fp) {
   }
   stride = sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components;
   for (i = 0; i < cinfo.output_height; ++i) {
-    if ((rows[i] = malloc(stride)) == NULL) {
+    if ((rows[i] = calloc(stride, 1)) == NULL) {
       goto error;
     }
   }

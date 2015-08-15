@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <ctype.h>
 #include "image.h"
 
@@ -374,6 +375,7 @@ image_t *read_pnm_stream(FILE *fp) {
   int max = 0;
   result_t result = FAILURE;
   image_t *img = NULL;
+  memset(token, 0, sizeof(token));
   get_next_token(fp, token, sizeof(token));
   type = token[1] - '0';
   if (token[0] != 'P' || type < 1 || type > 6 || token[2] != 0) {

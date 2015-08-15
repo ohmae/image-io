@@ -69,17 +69,17 @@ typedef struct BITMAPFILEHEADER {
  * @brief 画像情報ヘッダ
  */
 typedef struct BITMAPINFOHEADER {
-  uint32_t biSize;         /**< この構造体のサイズ */
-  int32_t biWidth;         /**< 画像の幅 */
-  int32_t biHeight;        /**< 画像の高さ */
-  uint16_t biPlanes;       /**< 画像の枚数、通常1 */
-  uint16_t biBitCount;     /**< 一色のビット数 */
-  uint32_t biCompression;  /**< 圧縮形式 */
-  uint32_t biSizeImage;    /**< 画像領域のサイズ */
-  int32_t biXPelsPerMeter; /**< 画像の横方向解像度情報 */
-  int32_t biYPelsPerMeter; /**< 画像の縦方向解像度情報*/
-  uint32_t biClrUsed;      /**< カラーパレットのうち実際に使っている色の個数 */
-  uint32_t biClrImportant; /**< カラーパレットのうち重要な色の数 */
+  uint32_t biSize;          /**< この構造体のサイズ */
+  int32_t  biWidth;         /**< 画像の幅 */
+  int32_t  biHeight;        /**< 画像の高さ */
+  uint16_t biPlanes;        /**< 画像の枚数、通常1 */
+  uint16_t biBitCount;      /**< 一色のビット数 */
+  uint32_t biCompression;   /**< 圧縮形式 */
+  uint32_t biSizeImage;     /**< 画像領域のサイズ */
+  int32_t  biXPelsPerMeter; /**< 画像の横方向解像度情報 */
+  int32_t  biYPelsPerMeter; /**< 画像の縦方向解像度情報*/
+  uint32_t biClrUsed;       /**< カラーパレットのうち実際に使っている色の個数 */
+  uint32_t biClrImportant;  /**< カラーパレットのうち重要な色の数 */
 } BITMAPINFOHEADER;
 
 /**
@@ -227,14 +227,13 @@ static uint32_t bs_read32(bs_t *bs) {
  * @param[in]     data 書き出すデータ
  */
 static void bs_write8(bs_t *bs, uint8_t data) {
-  uint8_t *src = &data;
   uint8_t *dst = &bs->buffer[bs->offset];
   if (bs->offset + 1 > bs->size) {
     bs->error = ERROR;
     return;
   }
+  dst[0] = data;
   bs->offset += 1;
-  dst[0] = src[0];
 }
 
 /**
@@ -246,14 +245,13 @@ static void bs_write8(bs_t *bs, uint8_t data) {
  * @param[in]     data 書き出すデータ
  */
 static void bs_write16(bs_t *bs, uint16_t data) {
-  uint8_t *src = (uint8_t *) &data;
   uint8_t *dst = &bs->buffer[bs->offset];
   if (bs->offset + 2 > bs->size) {
     bs->error = ERROR;
     return;
   }
-  dst[0] = src[0];
-  dst[1] = src[1];
+  dst[0] = 0xff & (data >> 0);
+  dst[1] = 0xff & (data >> 8);
   bs->offset += 2;
 }
 
@@ -266,16 +264,15 @@ static void bs_write16(bs_t *bs, uint16_t data) {
  * @param[in]     data 書き出すデータ
  */
 static void bs_write32(bs_t *bs, uint32_t data) {
-  uint8_t *src = (uint8_t *) &data;
   uint8_t *dst = &bs->buffer[bs->offset];
   if (bs->offset + 4 > bs->size) {
     bs->error = ERROR;
     return;
   }
-  dst[0] = src[0];
-  dst[1] = src[1];
-  dst[2] = src[2];
-  dst[3] = src[3];
+  dst[0] = 0xff & (data >> 0 );
+  dst[1] = 0xff & (data >> 8 );
+  dst[2] = 0xff & (data >> 16);
+  dst[3] = 0xff & (data >> 24);
   bs->offset += 4;
 }
 
@@ -729,6 +726,7 @@ static result_t read_bitmap_rle(
   int width = header->info.biWidth;
   y = abs(header->info.biHeight) - 1;
   x = 0;
+  bs_init(buffer, sizeof(buffer), &bs);
   while (y >= 0 && x <= width) {
     if (fread(buffer, 2, 1, fp) != 1) {
       return FAILURE;
@@ -749,7 +747,7 @@ static result_t read_bitmap_rle(
       if (fread(buffer, c, 1, fp) != 1) {
         return FAILURE;
       }
-      bs_init(buffer, c, &bs);
+      bs_set_offset(&bs, 0);
       tmp = bs_read8(&bs);
       for (i = 0; i < n && x < width; i++) {
         shift -= bc;
@@ -999,20 +997,19 @@ static result_t write_palette(FILE *fp, image_t *img, int bc) {
  */
 static result_t write_bitmap_32(FILE *fp, image_t *img, int bc, int stride) {
   result_t result = FAILURE;
-  bs_t bs;
   int x, y;
   uint8_t *row = NULL;
+  uint8_t *work;
   if ((row = calloc(stride, 1)) == NULL) {
     goto error;
   }
-  bs_init(row, stride, &bs);
   for (y = img->height - 1; y >= 0; y--) {
-    bs_set_offset(&bs, 0);
+    work = row;
     for (x = 0; x < img->width; x++) {
-      bs_write8(&bs, img->map[y][x].c.a);
-      bs_write8(&bs, img->map[y][x].c.b);
-      bs_write8(&bs, img->map[y][x].c.g);
-      bs_write8(&bs, img->map[y][x].c.r);
+      *work++ = img->map[y][x].c.a;
+      *work++ = img->map[y][x].c.b;
+      *work++ = img->map[y][x].c.g;
+      *work++ = img->map[y][x].c.r;
     }
     if (fwrite(row, stride, 1, fp) != 1) {
       goto error;
@@ -1035,19 +1032,18 @@ static result_t write_bitmap_32(FILE *fp, image_t *img, int bc, int stride) {
  */
 static result_t write_bitmap_24(FILE *fp, image_t *img, int bc, int stride) {
   result_t result = FAILURE;
-  bs_t bs;
   int x, y;
   uint8_t *row = NULL;
+  uint8_t *work;
   if ((row = calloc(stride, 1)) == NULL) {
     goto error;
   }
-  bs_init(row, stride, &bs);
   for (y = img->height - 1; y >= 0; y--) {
-    bs_set_offset(&bs, 0);
+    work = row;
     for (x = 0; x < img->width; x++) {
-      bs_write8(&bs, img->map[y][x].c.b);
-      bs_write8(&bs, img->map[y][x].c.g);
-      bs_write8(&bs, img->map[y][x].c.r);
+      *work++ = img->map[y][x].c.b;
+      *work++ = img->map[y][x].c.g;
+      *work++ = img->map[y][x].c.r;
     }
     if (fwrite(row, stride, 1, fp) != 1) {
       goto error;
@@ -1070,28 +1066,27 @@ static result_t write_bitmap_24(FILE *fp, image_t *img, int bc, int stride) {
  */
 static result_t write_bitmap_index(FILE *fp, image_t *img, int bc, int stride) {
   result_t result = FAILURE;
-  bs_t bs;
   int x, y;
   uint8_t *row = NULL;
+  uint8_t *work;
   if ((row = calloc(stride, 1)) == NULL) {
     goto error;
   }
-  bs_init(row, stride, &bs);
   for (y = img->height - 1; y >= 0; y--) {
     int shift = 8;
     uint8_t tmp = 0;
-    bs_set_offset(&bs, 0);
+    work = row;
     for (x = 0; x < img->width; x++) {
       shift -= bc;
       tmp |= img->map[y][x].i << shift;
       if (shift == 0) {
         shift = 8;
-        bs_write8(&bs, tmp);
+        *work++ = tmp;
         tmp = 0;
       }
     }
     if (shift != 8) {
-      bs_write8(&bs, tmp);
+      *work++ = tmp;
     }
     if (fwrite(row, stride, 1, fp) != 1) {
       goto error;
@@ -1114,12 +1109,12 @@ static result_t write_bitmap_index(FILE *fp, image_t *img, int bc, int stride) {
  */
 static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
   result_t result = FAILURE;
-  bs_t bs;
   int i;
   int x, y;
   int num;
   int count;
   int reduction;
+  uint8_t *work;
   uint8_t *raw = NULL;
   uint8_t *step = NULL;
   uint8_t *row = NULL;
@@ -1127,9 +1122,9 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
   int cpb = 8 / bc; // 1Byteあたりの色数
   int count_max = 255 / cpb;
   stride = (img->width * bc + 7) / 8;
-  raw = malloc(stride);
-  step = malloc(stride);
-  row = malloc(stride * 2);
+  raw = calloc(stride, 1);
+  step = calloc(stride, 1);
+  row = calloc(stride * 2, 1);
   if (raw == NULL || step == NULL || row == NULL) {
     goto error;
   }
@@ -1137,18 +1132,18 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
     // 非圧縮データを作る
     int shift = 8;
     uint8_t tmp = 0;
-    bs_init(raw, stride, &bs);
+    work = raw;
     for (x = 0; x < img->width; x++) {
       shift -= bc;
       tmp |= img->map[y][x].i << shift;
       if (shift == 0) {
         shift = 8;
-        bs_write8(&bs, tmp);
+        *work++ = tmp;
         tmp = 0;
       }
     }
     if (shift != 8) {
-      bs_write8(&bs, tmp);
+      *work++ = tmp;
     }
     // 非圧縮データの連続数を記録する
     for (x = 0; x < stride; x += count) {
@@ -1162,7 +1157,7 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
       step[x] = count;
     }
     // 圧縮データを作る
-    bs_init(row, stride * 2, &bs);
+    work = row;
     for (x = 0; x < stride; x += count) {
       if (step[x] < 2) {
         count = reduction = 0;
@@ -1178,17 +1173,17 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
           count -= 2;
         }
         if (reduction > 2) { // 絶対モード
-          bs_write8(&bs, 0);
+          *work++ = 0;
           num = count * cpb;
           if (num + x * cpb > img->width) {
             num--;
           }
-          bs_write8(&bs, num);
+          *work++ = num;
           for (i = x; i < x + count; i++) {
-            bs_write8(&bs, raw[i]);
+            *work++ = raw[i];
           }
           if (count % 2) {
-            bs_write8(&bs, 0);
+            *work++ = 0;
           }
         } else { // エンコードモード
           for (i = x; i < x + count; i += step[i]) {
@@ -1196,8 +1191,8 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
             if (num + i * cpb > img->width) {
               num--;
             }
-            bs_write8(&bs, num);
-            bs_write8(&bs, raw[i]);
+            *work++ = num;
+            *work++ = raw[i];
           }
         }
       } else { // エンコードモード
@@ -1206,21 +1201,21 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
         if (num + x * cpb > img->width) {
           num--;
         }
-        bs_write8(&bs, num);
-        bs_write8(&bs, raw[x]);
+        *work++ = num;
+        *work++ = raw[x];
       }
     }
     if (y == 0) { // EOF
-      bs_write8(&bs, 0);
-      bs_write8(&bs, 1);
+      *work++ = 0;
+      *work++ = 1;
     } else { // EOL
-      bs_write8(&bs, 0);
-      bs_write8(&bs, 0);
+      *work++ = 0;
+      *work++ = 0;
     }
-    if (fwrite(row, bs.offset, 1, fp) != 1) {
+    if (fwrite(row, work - row, 1, fp) != 1) {
       goto error;
     }
-    image_size += bs.offset;
+    image_size += work - row;
   }
   if (fseek(fp, 0, SEEK_SET) != 0) {
     goto error;
@@ -1234,7 +1229,7 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
 }
 
 /**
- * @brief インデックスカラーのビットマップ情報をRLE形式で書き出す
+ * @brief ビットマップ情報を出力する。
  *
  * @param[in] fp       ファイルストリーム
  * @param[in] img      画像データ
@@ -1267,9 +1262,12 @@ static result_t write_bitmap(FILE *fp, image_t *img, int bc, int compress) {
 /**
  * @brief BMP形式としてファイルに書き出す。
  *
- * Windows形式（BITMAPINFOHEADER）のBI_RGBでのみ出力
- * COLOR_TYPE_PALETTEの場合は、
- * インデックスカラー形式として書き出す。
+ * COLOR_TYPE_RGBAはBITMAPV5HEADERのBI_BITFIELDを使用し32bitカラー出力を行う。
+ * COLOR_TYPE_RGBはBITMAPINFOHEADERのBI_RGBで出力を行う
+ * COLOR_TYPE_GRAYはCOLOR_TYPE_PALETTEに変換を行ってから出力を行う
+ * COLOR_TYPE_PALETTEはBITMAPINFOHEADERのBI_RGBで出力を行う
+ * compressがTRUEの時かつ、COLOR_TYPE_PALETTEかつ、palette_sizeが3以上の時
+ * パレット数に応じてBI_RLE8もしくはBI_RLE4で出力を行う
  *
  * @param[in] filename 書き出すファイル名
  * @param[in] img      画像データ
@@ -1294,9 +1292,12 @@ result_t write_bmp_file(const char *filename, image_t *img, int compress) {
 /**
  * @brief BMP形式としてファイルに書き出す。
  *
- * Windows形式（BITMAPINFOHEADER）のBI_RGBでのみ出力
- * COLOR_TYPE_PALETTEの場合は、
- * インデックスカラー形式として書き出す。
+ * COLOR_TYPE_RGBAはBITMAPV5HEADERのBI_BITFIELDを使用し32bitカラー出力を行う。
+ * COLOR_TYPE_RGBはBITMAPINFOHEADERのBI_RGBで出力を行う
+ * COLOR_TYPE_GRAYはCOLOR_TYPE_PALETTEに変換を行ってから出力を行う
+ * COLOR_TYPE_PALETTEはBITMAPINFOHEADERのBI_RGBで出力を行う
+ * compressがTRUEの時かつ、COLOR_TYPE_PALETTEかつ、palette_sizeが3以上の時
+ * パレット数に応じてBI_RLE8もしくはBI_RLE4で出力を行う
  *
  * @param[in] fp       書き出すファイルストリームのポインタ
  * @param[in] img      画像データ

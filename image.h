@@ -18,9 +18,9 @@
 #include "def.h"
 
 #define COLOR_TYPE_INDEX 0   /**< インデックスカラー方式 */
-#define COLOR_TYPE_GRAY 1    /**< グレースケール方式 */
-#define COLOR_TYPE_RGB 2     /**< RGB方式 */
-#define COLOR_TYPE_RGBA 3    /**< RGBA方式 */
+#define COLOR_TYPE_GRAY  1   /**< グレースケール方式 */
+#define COLOR_TYPE_RGB   2   /**< RGB方式 */
+#define COLOR_TYPE_RGBA  3   /**< RGBA方式 */
 
 /**
  * @brief 色情報
