@@ -1162,15 +1162,12 @@ static result_t write_bitmap_rle(FILE *fp, image_t *img, int bc, int stride) {
       if (step[x] < 2) {
         count = reduction = 0;
         while ((x + count < stride)
-            && (count < count_max)
+            && (count + step[x + count] <= count_max)
             && (step[x + count] <= 2)) {
           if (step[x + count] == 1) {
             reduction++;
           }
           count += step[x + count];
-        }
-        if (count * cpb > 255) { // 256になる可能性があるので戻す
-          count -= 2;
         }
         if (reduction > 2) { // 絶対モード
           *work++ = 0;
