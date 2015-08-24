@@ -41,8 +41,11 @@ image_t *read_png_file(const char *filename) {
  * @return 読み込んだ画像、読み込みに失敗した場合NULL
  */
 image_t *read_png_stream(FILE *fp) {
-  int i, x, y;
   image_t *img = NULL;
+  int i, x, y;
+  int width, height;
+  int num;
+  png_colorp palette;
   png_structp png = NULL;
   png_infop info = NULL;
   png_bytep row;
@@ -68,46 +71,46 @@ image_t *read_png_stream(FILE *fp) {
   png_init_io(png, fp);
   png_set_sig_bytes(png, sizeof(sig_bytes));
   png_read_png(png, info, PNG_TRANSFORM_PACKING, NULL);
+  width = png_get_image_width(png, info);
+  height =  png_get_image_height(png, info);
   rows = png_get_rows(png, info);
   // 画像形式に応じて詰め込み
-  switch (info->color_type) {
+  switch (png_get_color_type(png, info)) {
     case PNG_COLOR_TYPE_PALETTE:  // インデックスカラー
-      if ((img = allocate_image(info->width, info->height, COLOR_TYPE_INDEX))
-          == NULL) {
+      if ((img = allocate_image(width, height, COLOR_TYPE_INDEX)) == NULL) {
         goto error;
       }
-      img->palette_num = info->num_palette;
-      for (i = 0; i < info->num_palette; i++) {
-        png_color pc = info->palette[i];
+      png_get_PLTE(png, info, &palette, &num);
+      img->palette_num = num;
+      for (i = 0; i < num; i++) {
+        png_color pc = palette[i];
         img->palette[i] = color_from_rgb(pc.red, pc.green, pc.blue);
       }
-      for (y = 0; y < info->height; y++) {
+      for (y = 0; y < height; y++) {
         row = rows[y];
-        for (x = 0; x < info->width; x++) {
+        for (x = 0; x < width; x++) {
           img->map[y][x].i = *row++;
         }
       }
       break;
     case PNG_COLOR_TYPE_GRAY:  // グレースケール
-      if ((img = allocate_image(info->width, info->height, COLOR_TYPE_GRAY))
-          == NULL) {
+      if ((img = allocate_image(width, height, COLOR_TYPE_GRAY)) == NULL) {
         goto error;
       }
-      for (y = 0; y < info->height; y++) {
+      for (y = 0; y < height; y++) {
         row = rows[y];
-        for (x = 0; x < info->width; x++) {
+        for (x = 0; x < width; x++) {
           img->map[y][x].g = *row++;
         }
       }
       break;
     case PNG_COLOR_TYPE_RGB:  // RGB
-      if ((img = allocate_image(info->width, info->height, COLOR_TYPE_RGB))
-          == NULL) {
+      if ((img = allocate_image(width, height, COLOR_TYPE_RGB)) == NULL) {
         goto error;
       }
-      for (y = 0; y < info->height; y++) {
+      for (y = 0; y < height; y++) {
         row = rows[y];
-        for (x = 0; x < info->width; x++) {
+        for (x = 0; x < width; x++) {
           img->map[y][x].c.r = *row++;
           img->map[y][x].c.g = *row++;
           img->map[y][x].c.b = *row++;
@@ -116,13 +119,12 @@ image_t *read_png_stream(FILE *fp) {
       }
       break;
     case PNG_COLOR_TYPE_RGB_ALPHA:  // RGBA
-      if ((img = allocate_image(info->width, info->height, COLOR_TYPE_RGBA))
-          == NULL) {
+      if ((img = allocate_image(width, height, COLOR_TYPE_RGBA)) == NULL) {
         goto error;
       }
-      for (y = 0; y < info->height; y++) {
+      for (y = 0; y < height; y++) {
         row = rows[y];
-        for (x = 0; x < info->width; x++) {
+        for (x = 0; x < width; x++) {
           img->map[y][x].c.r = *row++;
           img->map[y][x].c.g = *row++;
           img->map[y][x].c.b = *row++;
@@ -170,8 +172,8 @@ result_t write_png_stream(FILE *fp, image_t *img) {
   result_t result = FAILURE;
   int row_size;
   int color_type;
-  png_structp png_ptr = NULL;
-  png_infop info_ptr = NULL;
+  png_structp png = NULL;
+  png_infop info = NULL;
   png_bytep row;
   png_bytepp rows = NULL;
   png_colorp palette = NULL;
@@ -198,43 +200,42 @@ result_t write_png_stream(FILE *fp, image_t *img) {
     default:
       return FAILURE;
   }
-  png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  if (png_ptr == NULL) {
+  png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (png == NULL) {
     goto error;
   }
-  info_ptr = png_create_info_struct(png_ptr);
-  if (info_ptr == NULL) {
+  info = png_create_info_struct(png);
+  if (info == NULL) {
     goto error;
   }
-  if (setjmp(png_jmpbuf(png_ptr))) {
+  if (setjmp(png_jmpbuf(png))) {
     goto error;
   }
-  png_init_io(png_ptr, fp);
-  png_set_IHDR(png_ptr, info_ptr, img->width, img->height, 8,
+  png_init_io(png, fp);
+  png_set_IHDR(png, info, img->width, img->height, 8,
       color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
       PNG_FILTER_TYPE_DEFAULT);
-  rows = png_malloc(png_ptr, sizeof(png_bytep) * img->height);
+  rows = png_malloc(png, sizeof(png_bytep) * img->height);
   if (rows == NULL) {
     goto error;
   }
-  png_set_rows(png_ptr, info_ptr, rows);
+  png_set_rows(png, info, rows);
   memset(rows, 0, sizeof(png_bytep) * img->height);
   for (y = 0; y < img->height; y++) {
-    if ((rows[y] = png_malloc(png_ptr, row_size)) == NULL) {
+    if ((rows[y] = png_malloc(png, row_size)) == NULL) {
       goto error;
     }
   }
   switch (img->color_type) {
     case COLOR_TYPE_INDEX:  // インデックスカラー
-      palette = png_malloc(png_ptr,
-          sizeof(png_color) * img->palette_num);
+      palette = png_malloc(png, sizeof(png_color) * img->palette_num);
       for (i = 0; i < img->palette_num; i++) {
         palette[i].red = img->palette[i].r;
         palette[i].green = img->palette[i].g;
         palette[i].blue = img->palette[i].b;
       }
-      png_set_PLTE(png_ptr, info_ptr, palette, img->palette_num);
-      png_free(png_ptr, palette);
+      png_set_PLTE(png, info, palette, img->palette_num);
+      png_free(png, palette);
       for (y = 0; y < img->height; y++) {
         row = rows[y];
         for (x = 0; x < img->width; x++) {
@@ -272,12 +273,12 @@ result_t write_png_stream(FILE *fp, image_t *img) {
       }
       break;
   }
-  png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+  png_write_png(png, info, PNG_TRANSFORM_IDENTITY, NULL);
   result = SUCCESS;
-  png_destroy_write_struct(&png_ptr, &info_ptr);
+  png_destroy_write_struct(&png, &info);
   return result;
   error:
-  png_destroy_write_struct(&png_ptr, &info_ptr);
+  png_destroy_write_struct(&png, &info);
   return FAILURE;
 }
 
