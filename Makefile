@@ -15,7 +15,7 @@ MAKE = make
 
 CFLAGS = -Wall -g3 -O2
 COPTS  = -D_DEBUG_ 
-LDFLAGS = -lpng -ljpeg -lz
+LDFLAGS = -lpng -ljpeg
 
 MODULE = image
 OBJ_DIR = obj
