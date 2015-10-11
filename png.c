@@ -70,7 +70,7 @@ image_t *read_png_stream(FILE *fp) {
   }
   png_init_io(png, fp);
   png_set_sig_bytes(png, sizeof(sig_bytes));
-  png_read_png(png, info, PNG_TRANSFORM_PACKING, NULL);
+  png_read_png(png, info, PNG_TRANSFORM_PACKING | PNG_TRANSFORM_STRIP_16, NULL);
   width = png_get_image_width(png, info);
   height =  png_get_image_height(png, info);
   rows = png_get_rows(png, info);
@@ -101,6 +101,21 @@ image_t *read_png_stream(FILE *fp) {
         row = rows[y];
         for (x = 0; x < width; x++) {
           img->map[y][x].g = *row++;
+        }
+      }
+      break;
+    case PNG_COLOR_TYPE_GRAY_ALPHA: // グレースケール+α
+      if ((img = allocate_image(width, height, COLOR_TYPE_RGBA)) == NULL) {
+        goto error;
+      }
+      for (y = 0; y < height; y++) {
+        row = rows[y];
+        for (x = 0; x < width; x++) {
+          uint8_t g = *row++;
+          img->map[y][x].c.r = g;
+          img->map[y][x].c.g = g;
+          img->map[y][x].c.b = g;
+          img->map[y][x].c.a = *row++;
         }
       }
       break;
