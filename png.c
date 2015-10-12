@@ -86,6 +86,19 @@ image_t *read_png_stream(FILE *fp) {
         png_color pc = palette[i];
         img->palette[i] = color_from_rgb(pc.red, pc.green, pc.blue);
       }
+      {
+        png_bytep trans = NULL;
+        int num_trans = 0;
+        if (png_get_tRNS(png, info, &trans, &num_trans, NULL) == PNG_INFO_tRNS
+            && trans != NULL && num_trans > 0) {
+          for (i = 0; i < num_trans; i++) {
+            img->palette[i].a = trans[i];
+          }
+          for (; i < num; i++) {
+            img->palette[i].a = 0xff;
+          }
+        }
+      }
       for (y = 0; y < height; y++) {
         row = rows[y];
         for (x = 0; x < width; x++) {
