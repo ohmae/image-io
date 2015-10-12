@@ -312,11 +312,7 @@ result_t write_png_stream(FILE *fp, image_t *img) {
   }
   png_write_png(png, info, PNG_TRANSFORM_IDENTITY, NULL);
   result = SUCCESS;
-  png_destroy_write_struct(&png, &info);
-  return result;
   error:
   png_destroy_write_struct(&png, &info);
-  return FAILURE;
+  return result;
 }
-
-
