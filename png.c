@@ -262,6 +262,15 @@ result_t write_png_stream(FILE *fp, image_t *img) {
         palette[i].green = img->palette[i].g;
         palette[i].blue = img->palette[i].b;
       }
+      for (i = img->palette_num - 1 ; i >= 0 && img->palette[i].a != 0xff; i--);
+      if (i >= 0) {
+        int num_trans = i + 1;
+        png_byte trans[255];
+        for (i = 0; i < num_trans; i++) {
+          trans[i] = img->palette[i].a;
+        }
+        png_set_tRNS(png, info, trans, num_trans, NULL);
+      }
       png_set_PLTE(png, info, palette, img->palette_num);
       png_free(png, palette);
       for (y = 0; y < img->height; y++) {
