@@ -72,7 +72,7 @@ image_t *read_png_stream(FILE *fp) {
   png_set_sig_bytes(png, sizeof(sig_bytes));
   png_read_png(png, info, PNG_TRANSFORM_PACKING | PNG_TRANSFORM_STRIP_16, NULL);
   width = png_get_image_width(png, info);
-  height =  png_get_image_height(png, info);
+  height = png_get_image_height(png, info);
   rows = png_get_rows(png, info);
   // 画像形式に応じて詰め込み
   switch (png_get_color_type(png, info)) {
@@ -117,7 +117,7 @@ image_t *read_png_stream(FILE *fp) {
         }
       }
       break;
-    case PNG_COLOR_TYPE_GRAY_ALPHA: // グレースケール+α
+    case PNG_COLOR_TYPE_GRAY_ALPHA:  // グレースケール+α
       if ((img = allocate_image(width, height, COLOR_TYPE_RGBA)) == NULL) {
         goto error;
       }
@@ -262,7 +262,7 @@ result_t write_png_stream(FILE *fp, image_t *img) {
         palette[i].green = img->palette[i].g;
         palette[i].blue = img->palette[i].b;
       }
-      for (i = img->palette_num - 1 ; i >= 0 && img->palette[i].a != 0xff; i--);
+      for (i = img->palette_num - 1; i >= 0 && img->palette[i].a != 0xff; i--);
       if (i >= 0) {
         int num_trans = i + 1;
         png_byte trans[255];

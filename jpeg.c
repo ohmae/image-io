@@ -17,6 +17,24 @@
 #include <string.h>
 #include <jpeglib.h>
 #include "image.h"
+#include <setjmp.h>
+
+/**
+ * jpeg_error_mgrの拡張。
+ */
+typedef struct my_error_mgr {
+  struct jpeg_error_mgr jerr;
+  jmp_buf jmpbuf;
+} my_error_mgr;
+
+/**
+ * 致命的エラー発生時の処理。
+ */
+static void error_exit(j_common_ptr cinfo) {
+  my_error_mgr *err = (my_error_mgr *) cinfo->err;
+  (*cinfo->err->output_message)(cinfo);
+  longjmp(err->jmpbuf, 1);
+}
 
 /**
  * @brief JPEG形式のファイルを読み込む。
@@ -42,60 +60,57 @@ image_t *read_jpeg_file(const char *filename) {
  * @return 読み込んだ画像、読み込みに失敗した場合NULL
  */
 image_t *read_jpeg_stream(FILE *fp) {
-  uint32_t i, x, y;
+  result_t result = FAILURE;
+  uint32_t x, y;
   struct jpeg_decompress_struct cinfo;
-  struct jpeg_error_mgr jerr;
+  my_error_mgr myerr;
   image_t *img = NULL;
+  JSAMPROW buffer = NULL;
   JSAMPROW row;
-  JSAMPARRAY rows = NULL;
+  ;
   int stride;
-  cinfo.err = jpeg_std_error(&jerr);
+  cinfo.err = jpeg_std_error(&myerr.jerr);
+  myerr.jerr.error_exit = error_exit;
+  if (setjmp(myerr.jmpbuf)) {
+    goto error;
+  }
   jpeg_create_decompress(&cinfo);
   jpeg_stdio_src(&cinfo, fp);
   if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK) {
     goto error;
   }
   jpeg_start_decompress(&cinfo);
-  if ((rows = calloc(sizeof(JSAMPROW), cinfo.output_height)) == NULL) {
+  if (cinfo.out_color_space != JCS_RGB) {
     goto error;
   }
   stride = sizeof(JSAMPLE) * cinfo.output_width * cinfo.output_components;
-  for (i = 0; i < cinfo.output_height; ++i) {
-    if ((rows[i] = calloc(stride, 1)) == NULL) {
-      goto error;
-    }
+  if ((buffer = calloc(stride, 1)) == NULL) {
+    goto error;
   }
-  while (cinfo.output_scanline < cinfo.output_height) {
-    jpeg_read_scanlines(&cinfo, rows + cinfo.output_scanline,
-        cinfo.output_height - cinfo.output_scanline);
-  }
-  jpeg_finish_decompress(&cinfo);
   if ((img = allocate_image(cinfo.output_width, cinfo.output_height,
-      COLOR_TYPE_RGB)) == NULL) {
+                            COLOR_TYPE_RGB)) == NULL) {
     goto error;
   }
   for (y = 0; y < cinfo.output_height; y++) {
-    row = rows[y];
+    jpeg_read_scanlines(&cinfo, &buffer, 1);
+    row = buffer;
     for (x = 0; x < cinfo.output_width; x++) {
       img->map[y][x].c.r = *row++;
       img->map[y][x].c.g = *row++;
       img->map[y][x].c.b = *row++;
       img->map[y][x].c.a = 0xff;
     }
-    free(rows[y]);
   }
-  free(rows);
-  jpeg_destroy_decompress(&cinfo);
-  return img;
+  jpeg_finish_decompress(&cinfo);
+  result = SUCCESS;
   error:
-  if (rows != NULL) {
-    for (y = 0; y < cinfo.output_height; y++) {
-      free(rows[y]);
-    }
-    free(rows);
+  jpeg_destroy_decompress(&cinfo);
+  free(buffer);
+  if (result != SUCCESS) {
+    free_image(img);
+    img = NULL;
   }
-  free_image(img);
-  return NULL;
+  return img;
 }
 
 /**
@@ -128,9 +143,10 @@ result_t write_jpeg_file(const char *filename, image_t *img) {
  * @return 成否
  */
 result_t write_jpeg_stream(FILE *fp, image_t *img) {
+  result_t result = FAILURE;
   int x, y;
   struct jpeg_compress_struct cinfo;
-  struct jpeg_error_mgr jerr;
+  my_error_mgr myerr;
   image_t *to_free = NULL;
   JSAMPROW buffer = NULL;
   JSAMPROW row;
@@ -145,7 +161,11 @@ result_t write_jpeg_stream(FILE *fp, image_t *img) {
     to_free = clone_image(img);
     img = image_to_rgb(to_free);
   }
-  cinfo.err = jpeg_std_error(&jerr);
+  cinfo.err = jpeg_std_error(&myerr.jerr);
+  myerr.jerr.error_exit = error_exit;
+  if (setjmp(myerr.jmpbuf)) {
+    goto error;
+  }
   jpeg_create_compress(&cinfo);
   jpeg_stdio_dest(&cinfo, fp);
   cinfo.image_width = img->width;
@@ -165,8 +185,10 @@ result_t write_jpeg_stream(FILE *fp, image_t *img) {
     jpeg_write_scanlines(&cinfo, &buffer, 1);
   }
   jpeg_finish_compress(&cinfo);
+  result = SUCCESS;
+  error:
   jpeg_destroy_compress(&cinfo);
   free(buffer);
   free_image(to_free);
-  return SUCCESS;
+  return result;
 }
