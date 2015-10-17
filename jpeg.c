@@ -67,7 +67,6 @@ image_t *read_jpeg_stream(FILE *fp) {
   image_t *img = NULL;
   JSAMPROW buffer = NULL;
   JSAMPROW row;
-  ;
   int stride;
   cinfo.err = jpeg_std_error(&myerr.jerr);
   myerr.jerr.error_exit = error_exit;
