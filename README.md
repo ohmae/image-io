@@ -33,3 +33,5 @@ Makefileについてもあくまでコンパイルするための方法を見て
 - [BMP画像の読み込み（画像データ）](http://www.mm2d.net/main/prog/c/image_io-12.html)
 - [BMP画像の書き出し（ヘッダ）](http://www.mm2d.net/main/prog/c/image_io-13.html)
 - [BMP画像の書き出し（画像データ）](http://www.mm2d.net/main/prog/c/image_io-14.html)
+- [PNG画像の入出力](http://www.mm2d.net/main/prog/c/image_io-15.html)
+- [JPEG画像の入出力](http://www.mm2d.net/main/prog/c/image_io-16.html)
