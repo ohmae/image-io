@@ -55,9 +55,10 @@ static uint8_t normalize(int value, int max) {
  * @brief 次のトークンをintにパースしたものを返す。
  *
  * 次のトークンがない、
- * トークンに数字以外が含まれる場合
+ * トークンに数字以外が含まれる場合、
+ * エラーとして-1を返す
  *
- * @return 次の整数値、エラー時0
+ * @return 次の整数値、エラー時-1
  */
 static int get_next_int(FILE *fp) {
   char token[11];
