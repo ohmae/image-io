@@ -313,10 +313,12 @@ result_t write_png_stream(FILE *fp, image_t *img) {
   png_write_png(png, info, PNG_TRANSFORM_IDENTITY, NULL);
   result = SUCCESS;
   error:
-  for (y = 0; y < img->height; y++) {
-    png_free(png, rows[y]);
+  if (rows != NULL) {
+    for (y = 0; y < img->height; y++) {
+      png_free(png, rows[y]);
+    }
+    png_free(png, rows);
   }
-  png_free(png, rows);
   png_destroy_write_struct(&png, &info);
   return result;
 }
