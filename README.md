@@ -35,3 +35,10 @@ Makefileについてもあくまでコンパイルするための方法を見て
 - [BMP画像の書き出し（画像データ）](http://www.mm2d.net/main/prog/c/image_io-14.html)
 - [PNG画像の入出力](http://www.mm2d.net/main/prog/c/image_io-15.html)
 - [JPEG画像の入出力](http://www.mm2d.net/main/prog/c/image_io-16.html)
+
+## Author
+大前 良介 (OHMAE Ryosuke)
+http://www.mm2d.net/
+
+## License
+[MIT License](https://github.com/ohmae/ImageIO/blob/master/LICENSE.txt)
