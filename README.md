@@ -1,4 +1,5 @@
 # ImageIO
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](./LICENSE)
 
 画像の入出力を勉強するために作成したプログラムです。
 プログラミング学習の役に立っていただければと思います。
