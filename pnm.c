@@ -1,13 +1,13 @@
 /**
  * @file pnm.c
  *
- * Copyright(c) 2015 大前良介(OHMAE Ryosuke)
+ * Copyright (c) 2015 大前良介 (OHMAE Ryosuke)
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/MIT
  *
  * @brief PNM(PPM/PGM/PBM)ファイルの読み書き処理
- * @author <a href="mailto:ryo@mm2d.net">大前良介(OHMAE Ryosuke)</a>
+ * @author <a href="mailto:ryo@mm2d.net">大前良介 (OHMAE Ryosuke)</a>
  * @date 2015/02/07
  */
 

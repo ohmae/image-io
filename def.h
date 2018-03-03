@@ -1,13 +1,13 @@
 /**
  * @file def.h
  *
- * Copyright(c) 2015 大前良介(OHMAE Ryosuke)
+ * Copyright (c) 2015 大前良介 (OHMAE Ryosuke)
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/MIT
  *
  * @brief プロジェクトに依存せず使える定義
- * @author <a href="mailto:ryo@mm2d.net">大前良介(OHMAE Ryosuke)</a>
+ * @author <a href="mailto:ryo@mm2d.net">大前良介 (OHMAE Ryosuke)</a>
  * @date 2015/02/28
  */
 
